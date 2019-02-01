@@ -2,6 +2,13 @@
 
 This extension will take your locally generated project docs and display them in a new window for easier reference.
 
+## Use
+
+* Create the documentation using `cargo doc` inside of your project folder
+* Open the folder in VS Code
+* Open the Command Palette `Ctrl+Shift+P` or `Cmd+Shift+P`
+* Search and activate `Rust: Doc Viewer`
+
 ## Features
 
 Open your rust docs and view them in another tab on VS Code
@@ -15,9 +22,18 @@ Open your rust docs and view them in another tab on VS Code
 
     2.) Requires documentation to be in the standard output from `cargo docs` 
 
+## Upcoming changes
+
+ - Open docs from a provided path
+ - Toolbar for managing docs location
+
 ## Release Notes
 
 The most basic functionality - viewing and searching of the docs
+
+### 1.0.1
+
+Fix issue finding generated docs
 
 ### 1.0.0
 

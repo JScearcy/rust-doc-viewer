@@ -1,0 +1,50 @@
+{
+	"name": "rust-doc-viewer",
+	"displayName": "Rust Doc Viewer",
+	"description": "View locally generated rust documentation within VS Code",
+	"author": {},
+	"version": "1.0.0",
+	"engines": {
+		"vscode": "^1.30.0"
+	},
+	"categories": [
+		"Other"
+	],
+	"activationEvents": [
+		"onCommand:extension.rustDocViewer"
+	],
+	"main": "./out/extension.js",
+	"contributes": {
+		"commands": [
+			{
+				"command": "extension.rustDocViewer",
+				"title": "Rust: Doc Viewer"
+			}
+		],
+		"configuration": {
+			"type": "object",
+			"title": "Rust: Doc Viewer Configuration",
+			"properties": {
+				"rustDocViewer.path": {
+					"type": ["string", "null"],
+					"default": null,
+					"description": "Specifies a path (relative to the workspace) of the documentation to open. Default will be {workspace}/target/doc/{workspace}/index.html"
+				}
+			}
+		}
+	},
+	"scripts": {
+		"vscode:prepublish": "npm run compile",
+		"compile": "tsc -p ./",
+		"watch": "tsc -watch -p ./",
+		"postinstall": "node ./node_modules/vscode/bin/install",
+		"test": "npm run compile && node ./node_modules/vscode/bin/test"
+	},
+	"devDependencies": {
+		"typescript": "^3.1.4",
+		"vscode": "^1.1.25",
+		"tslint": "^5.8.0",
+		"@types/node": "^8.10.25",
+		"@types/mocha": "^2.2.42"
+	}
+}

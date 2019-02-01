@@ -2,7 +2,16 @@
 	"name": "rust-doc-viewer",
 	"displayName": "Rust Doc Viewer",
 	"description": "View locally generated rust documentation within VS Code",
-	"author": {},
+	"author": {
+		"name" : "Jacob Scearcy",
+		"email" : "ugliestlemming@gmail.com",
+		"url" : "http://js-consults.com/"
+	},
+	"publisher": "JScearcy",
+	"repository": {
+		"url": "https://github.com/JScearcy/rust-doc-viewer",
+		"type": "git"
+	},
 	"version": "1.0.0",
 	"engines": {
 		"vscode": "^1.30.0"

@@ -4,7 +4,6 @@ import * as fs from 'fs';
 import { PostMessageHandler } from './postMessageService';
 import { Utilities } from './utilities';
 import { Message } from './models';
-import { getToolBarHtml } from './toolbar';
 
 export class RustDocViewer {
     private currentPanel: vscode.WebviewPanel;

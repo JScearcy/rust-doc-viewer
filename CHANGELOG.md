@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 
+## [1.0.1] - 2019-02-01
+### Added
+- Convert '-' to '_' in projects following rust convention for output docs
+
 ## [1.0.0] - 2019-02-01
 ### Added
 - Basic display of rust docs allowing navigation within VS Code

@@ -20,8 +20,9 @@ export class RustDocViewer {
                     enableScripts: true
                 }
             );
+            const workspaceName = vscode.workspace.name.replace('-', '_');
             const onDiskPath = vscode.Uri.file(
-                path.join(vscode.workspace.rootPath || '', 'target', 'doc', vscode.workspace.name, 'index.html')
+                path.join(vscode.workspace.rootPath || '', 'target', 'doc', workspaceName, 'index.html')
             );
 
             this.rustDocSrc = onDiskPath.with({ scheme: 'vscode-resource' });
@@ -52,7 +53,7 @@ export class RustDocViewer {
     render(src: vscode.Uri) {
         this.getCurrentView(src, this.context.extensionPath)
             .then((pageData) => this.currentPanel.webview.html = pageData)
-            .catch(err => this.showError('Could not open the Rust Docs - Please check your path configuration'));
+            .catch(err => this.showError(`Could not open the Rust Docs from: ${src.fsPath} - Please check your path configuration`));
     }
 
     pullToFront() {

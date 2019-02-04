@@ -31,10 +31,19 @@ Open your rust docs and view them in another tab on VS Code
 
 The most basic functionality - viewing and searching of the docs
 
+### 1.0.3
+
+- Remove configuration until it can be used and is fully functional
+- Fix nested navigation path resolution
+
+### 1.0.2
+
+- Update README with more setup information
+
 ### 1.0.1
 
-Fix issue finding generated docs
+- Fix issue finding generated docs
 
 ### 1.0.0
 
-Initial release of Rust Doc Viewer
+- Initial release of Rust Doc Viewer

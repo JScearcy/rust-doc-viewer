@@ -4,56 +4,66 @@ import * as fs from 'fs';
 import { PostMessageHandler } from './postMessageService';
 import { Utilities } from './utilities';
 import { Message } from './models';
+import { Configuration } from './configuration';
+import { Option } from './option';
 
 export class RustDocViewer {
     private currentPanel: vscode.WebviewPanel;
-    private postMessageHandler: PostMessageHandler;
-    private rustDocSrc: vscode.Uri;
+    private postMessageHandler: Option<PostMessageHandler>;
+    private rustDocSrc: Option<vscode.Uri>;
+    private config: Configuration;
 
     constructor(private context: vscode.ExtensionContext, disposeFn: () => void) {
-        if (vscode.workspace.name) {
-            this.currentPanel = vscode.window.createWebviewPanel(
-                'rustDocViewer',
-                `${vscode.workspace.name} Docs`,
-                vscode.ViewColumn.One,
-                {
-                    enableScripts: true
-                }
-            );
-            const workspaceName = vscode.workspace.name.replace('-', '_');
-            const onDiskPath = vscode.Uri.file(
-                path.join(vscode.workspace.rootPath || '', 'target', 'doc', workspaceName, 'index.html')
-            );
+        this.postMessageHandler = Option.lift<PostMessageHandler>();
+        this.rustDocSrc = Option.lift<vscode.Uri>();
+        this.config = new Configuration();
+        this.currentPanel = vscode.window.createWebviewPanel(
+            'rustDocViewer',
+            `${this.config.getWorkspaceName()} Docs`,
+            vscode.ViewColumn.One,
+            {
+                enableScripts: true
+            }
+        );
+        this.rustDocSrc = this.config.getUriToDocs();
+        this.rustDocSrc.map((uri) => {
+            this.postMessageHandler = Option.lift(new PostMessageHandler(uri));
+            return uri;
+        });
+        this.onDispose(disposeFn);
 
-            this.rustDocSrc = onDiskPath.with({ scheme: 'vscode-resource' });
-            this.postMessageHandler = new PostMessageHandler(this.rustDocSrc);
-            this.onDispose(disposeFn);
-        } else {
-            this.showError('No workspace defined to display docs from, please open a folder');
-            throw Error('No workspace defined to display docs from, please open a folder');
-        }
     }
 
     init() {
-        this.render(this.rustDocSrc);
-        this.currentPanel.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
+        if (Option.isValue(this.rustDocSrc)) {
+            const uri = this.rustDocSrc.unwrap();
+            this.render(uri);
+            this.currentPanel.webview.onDidReceiveMessage((msg) => this.handleMessage(msg));
+        } else {
+            this.showError('No workspace defined to display docs from, please open a folder in the workspace');
+        }
     }
 
     handleMessage(message: Message) {
-        const response = this.postMessageHandler.handleMessage(message);
-        if (response && response.el) {
-            this.currentPanel.webview.postMessage(response);
-        } else if (response && response.page) {
-            this.render(response.page);
+        if (Option.isValue(this.postMessageHandler)) {
+            const postMessageHandler = this.postMessageHandler.unwrap();
+            const response = postMessageHandler.handleMessage(message);
+            if (response && response.el) {
+                this.currentPanel.webview.postMessage(response);
+            } else if (response && response.page) {
+                this.render(response.page);
+            } else {
+                this.showError('Could not parse message from the docs page');
+            }
         } else {
-            this.showError('Could not parse message from the docs page');
+            this.showError('No workspace defined to display docs from, please open a folder in the workspace');
         }
     }
 
     render(src: vscode.Uri) {
         this.getCurrentView(src, this.context.extensionPath)
             .then((pageData) => this.currentPanel.webview.html = pageData)
-            .catch(err => this.showError(`Could not open the Rust Docs from: ${src.fsPath} - Please check your path configuration`));
+            .catch(_ => this.showError(`Could not open the Rust Docs from: ${src.fsPath}`));
     }
 
     pullToFront() {
@@ -80,8 +90,8 @@ export class RustDocViewer {
                 const updatedHrefData = Utilities.hrefReplacer(dataString, src);
                 let updatedSrcData = Utilities.srcReplacer(updatedHrefData, src);
 
-                const localScriptPath = path.join(extensionPath, 'out', 'vscodeSanitizer.js');
-                const localScriptUri = vscode.Uri.file(localScriptPath).with({ scheme: 'vscode-resource' }).toString();
+                const localScriptUri = vscode.Uri.file(path.join(extensionPath, 'out', 'vscodeSanitizer.js'))
+                    .with({ scheme: 'vscode-resource' }).toString();
                 const removePushStateSpot = updatedSrcData
                     .split('<body>');
                 const removePushStateStr = [

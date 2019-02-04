@@ -12,7 +12,7 @@
 		"url": "https://github.com/JScearcy/rust-doc-viewer",
 		"type": "git"
 	},
-	"version": "1.0.2",
+	"version": "1.0.3",
 	"engines": {
 		"vscode": "^1.30.0"
 	},
@@ -29,18 +29,7 @@
 				"command": "extension.rustDocViewer",
 				"title": "Rust: Doc Viewer"
 			}
-		],
-		"configuration": {
-			"type": "object",
-			"title": "Rust: Doc Viewer Configuration",
-			"properties": {
-				"rustDocViewer.path": {
-					"type": ["string", "null"],
-					"default": null,
-					"description": "Specifies a path (relative to the workspace) of the documentation to open. Default will be {workspace}/target/doc/{workspace}/index.html"
-				}
-			}
-		}
+		]
 	},
 	"scripts": {
 		"vscode:prepublish": "npm run compile",

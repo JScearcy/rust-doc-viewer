@@ -2,7 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 
 export class Utilities {
-    static hrefReplacer(data: string, srcPath: vscode.Uri, returnPath = false): string {
+    static hrefReplacer(data: string, srcPath: vscode.Uri): string {
         const linkMatcher = /href=["']([a-zA-Z0-9_\-#\.\/]+)["']/g;
         return Utilities.pathReplacer(linkMatcher, data, srcPath, (newPath) => `href="${newPath}"`);
     }

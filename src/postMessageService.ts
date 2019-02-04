@@ -19,6 +19,7 @@ export class PostMessageHandler {
                     const path = decodeURIComponent(message.path);
                     if (!path.includes('../')) {
                         const newSrc = vscode.Uri.parse(path);
+                        this.rustDocSrc = newSrc;
                         return { page: newSrc, elId: message.elId };
                     }
                 } else if (message.el) {
@@ -27,6 +28,7 @@ export class PostMessageHandler {
                         const relativePath = relativePathArr[1];
                         if (relativePath) {
                             const pathToLoad = Utilities.pathFromRelative(relativePath, this.rustDocSrc);
+                            this.rustDocSrc = pathToLoad;
                             return { page: pathToLoad, elId: message.elId };
                         }
                     }

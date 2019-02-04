@@ -31,6 +31,10 @@ Open your rust docs and view them in another tab on VS Code
 
 The most basic functionality - viewing and searching of the docs
 
+### 1.0.4
+
+- Add icon and update banner
+
 ### 1.0.3
 
 - Remove configuration until it can be used and is fully functional

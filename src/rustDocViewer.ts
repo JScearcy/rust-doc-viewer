@@ -11,12 +11,10 @@ export class RustDocViewer {
     private currentPanel: vscode.WebviewPanel;
     private postMessageHandler: Option<PostMessageHandler>;
     private rustDocSrc: Option<vscode.Uri>;
-    private config: Configuration;
 
-    constructor(private context: vscode.ExtensionContext, disposeFn: () => void) {
+    constructor(private config: Configuration, private context: vscode.ExtensionContext, disposeFn: () => void) {
         this.postMessageHandler = Option.lift<PostMessageHandler>();
         this.rustDocSrc = Option.lift<vscode.Uri>();
-        this.config = new Configuration();
         this.currentPanel = vscode.window.createWebviewPanel(
             'rustDocViewer',
             `${this.config.getWorkspaceName()} Docs`,

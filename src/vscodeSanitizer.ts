@@ -33,8 +33,9 @@ declare var acquireVsCodeApi: any;
 
     document.addEventListener('click', (e) => {
         e.preventDefault();
-        if (e.srcElement && validNavigableEl(e.srcElement)) {
-            const el = e.srcElement;
+        const element = e.srcElement as Element;
+        if (element && validNavigableEl(element)) {
+            const el = element;
             const href = decodeURIComponent((<any>el).href);
             if (href === '') {
                 vscode.postMessage({
@@ -56,11 +57,10 @@ declare var acquireVsCodeApi: any;
                 });
                 window.scroll(0, 0);
             }
-        } else if (e.srcElement &&
-            (e.srcElement.tagName === "SPAN" || e.srcElement.tagName === "P")) {
-            const parentA = e.srcElement.parentElement;
+        } else if (element &&
+            (element.tagName === "SPAN" || element.tagName === "P")) {
+            const parentA = element.parentElement;
             if (parentA && parentA.tagName === "A") {
-                console.log('clicked el: ', e);
                 if ((<any>parentA).href !== '') {
                     vscode.postMessage({
                         elId: parentA.id,

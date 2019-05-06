@@ -24,4 +24,36 @@ export class Utilities {
     
         return vscode.Uri.file(newPath);
     }
+
+    static toPromise(fn: any) {
+        return <T>(...args: any[]): Promise<T> => {
+            return new Promise((resolve, reject) => {
+                fn(...args, (err: any, data: any) => {
+                    if (err) { return reject(err); }
+                    return resolve(data);
+                });
+            });
+        };
+    }
+}
+
+export class Queue<T> {
+    private line: T[] = [];
+    
+    enqueue(item: T) {
+        this.line.push(item);
+    }
+    
+    enqueueMany(items: T[]) {
+        items.forEach(item => this.line.push(item));
+    }
+
+    dequeue(): T {
+        if (this.isEmpty()) { throw Error('Queue is empty'); }
+        return this.line.shift() as T;
+    }
+
+    isEmpty(): boolean {
+        return this.line.length === 0;
+    }
 }

@@ -7,7 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 ### Changed
 
-## [1.0.3] - 2019-02-04
+## [1.0.5] - 2019-05-03
+## Updated
+- `vscode` dependencies contained a vunterability. Updated package to latest with no gulp dependency
+- `js-yaml` contained vulnerabilities. Updated via `npm audit fix`
+## Bugfix
+- Add ability to handle untitled workspaces
+
+## [1.0.4] - 2019-02-04
 ### Added
 - Add icon and update banner
 

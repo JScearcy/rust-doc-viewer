@@ -22,6 +22,8 @@ Open your rust docs and view them in another tab on VS Code
 
     2.) Requires documentation to be in the standard output from `cargo docs` 
 
+    3.) Testing and build automation
+
 ## Upcoming changes
 
  - Open docs from a provided path
@@ -30,6 +32,11 @@ Open your rust docs and view them in another tab on VS Code
 ## Release Notes
 
 The most basic functionality - viewing and searching of the docs
+
+## [1.0.5]
+- `vscode` dependencies contained a vulnerability. Updated package to latest with no gulp dependency
+- `js-yaml` contained vulnerabilities. Updated via `npm audit fix`
+- Add ability to handle untitled workspaces
 
 ### 1.0.4
 

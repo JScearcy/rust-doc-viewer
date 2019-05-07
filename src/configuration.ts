@@ -15,37 +15,24 @@ export class Configuration {
     }
 
     static async createConfiguration(): Promise<Configuration> {
-        // TODO: Add config path, requires much more work as the view can't retrieve the files directly - must be embedded
-        // const configuration = vscode.workspace.getConfiguration('rustDocViewer');
-        // const configPath: string | undefined = configuration.get('path');
-        // if (configPath) {
-        //     this.fsPathToDocs = path.join(configPath, 'index.html');
-        // }
         if (vscode.workspace.workspaceFolders) {
-            let selectedFolderName = vscode.workspace.workspaceFolders[0] ? vscode.workspace.workspaceFolders[0].name : '';
-            if (vscode.workspace.workspaceFolders.length > 1) {
-                const quickPickSelectOptions = vscode.workspace.workspaceFolders.map(folder => folder.name);
+            const subDirectories = await this.getRustDirectories(vscode.workspace.workspaceFolders);
+            if (subDirectories && subDirectories.length > 0) {
                 const quickPickOptions: vscode.QuickPickOptions = {
-                    placeHolder: 'Select folder with docs to display',
+                    placeHolder: 'Select project to display',
                 };
-                const quickPickSelection = await vscode.window.showQuickPick(quickPickSelectOptions, quickPickOptions);
+                const quickPickSelection = await vscode.window.showQuickPick(subDirectories, quickPickOptions);
                 if (quickPickSelection) {
-                    selectedFolderName = quickPickSelection;
-                }
-            }
-
-            const workspaceFolder = vscode.workspace.workspaceFolders.find(folder => folder.name === selectedFolderName);
-            if (workspaceFolder) {
-                const projectFolderPath = await this.getProjectFolderPath(workspaceFolder);
-                if (projectFolderPath) {
-                    const packageName = await this.getCargoPackageName(projectFolderPath, workspaceFolder);
-                    const docsPath = path.join(projectFolderPath, 'target', 'doc', packageName, 'index.html');
+                    const packageName = await this.getCargoPackageName(quickPickSelection);
+                    const docsPath = path.join(quickPickSelection, 'target', 'doc', packageName, 'index.html');
                     return Promise.resolve(new Configuration(packageName, docsPath));
+                } else {
+                    return this.rejectInstantiation('Please select a folder to display');
                 }
             }
         }
 
-        return Promise.reject('Configuration creation failed, could not find a valid folder within the workspace/selected workspace folder');
+        return this.rejectInstantiation('Could not find a valid folder within the workspace/selected workspace folder');
     }
 
     getUriToDocs(): Option<vscode.Uri> {
@@ -60,10 +47,10 @@ export class Configuration {
         return this.workspaceName;
     }
 
-    private static async getCargoPackageName(projectFolderPath: string, workspaceFolder: vscode.WorkspaceFolder): Promise<string> {
+    private static async getCargoPackageName(projectFolderPath: string): Promise<string> {
         const packageCargoPath = path.join(projectFolderPath, 'Cargo.toml');
         const packageCargoReadStream = createReadStream(packageCargoPath);
-        let packageName = workspaceFolder.name;
+        let packageName = '';
         const rl = createInterface({ input: packageCargoReadStream, });
         await new Promise((resolve) => {
             rl.on('line', (input: string) => {
@@ -81,27 +68,40 @@ export class Configuration {
         return packageName;
     }
 
-    private static async getProjectFolderPath(workspaceFolder: vscode.WorkspaceFolder): Promise<string> {
+    private static async getRustDirectories(workspaceFolders: vscode.WorkspaceFolder[]): Promise<string[]> {
+        const rustDirectories = new Set<string>();
+        for (let i = 0; i < workspaceFolders.length; i++) {
+            const workspaceFolder = workspaceFolders[i];
+            const subDirectories = await this.getRustSubDirectories(workspaceFolder);
+            subDirectories.forEach(dir => rustDirectories.add(dir));
+        }
+
+        return Array.from(rustDirectories);
+    }
+
+    private static async getRustSubDirectories(workspaceFolder: vscode.WorkspaceFolder): Promise<string[]> {
         const readDirPromise = Utilities.toPromise(readdir);
-        let folderToSearch = workspaceFolder.uri.fsPath;
-        let subDirQueue = new Queue<string>();
-        let projectPath = '';
-        do {
-            let folderChildren = await readDirPromise<string[]>(folderToSearch).catch(() => [] as string[]);
+        const rustDirectories = new Set<string>();
+        const subDirQueue = new Queue<string>();
+        subDirQueue.enqueue(workspaceFolder.uri.fsPath);
+
+        while (!subDirQueue.isEmpty()) {
+            const folderToSearch = subDirQueue.dequeue();
+            const folderChildren = await readDirPromise<string[]>(folderToSearch).catch(() => [] as string[]);
             if (folderChildren.indexOf('target') >= 0) {
-                projectPath = folderToSearch;
-                break;
+                rustDirectories.add(folderToSearch);
             } else {
-                folderChildren = folderChildren
+                const visibleChildren = folderChildren
                     .filter(folder => !(/(^|\/)\.[^\/\.]/g).test(folder))
                     .map(folder => path.join(folderToSearch, folder));
-                subDirQueue.enqueueMany(folderChildren);
+                subDirQueue.enqueueMany(visibleChildren);
             }
-            if (!subDirQueue.isEmpty()) {
-                folderToSearch = subDirQueue.dequeue();
-            }
-        } while (!subDirQueue.isEmpty());
+        }
 
-        return projectPath;
+        return Array.from(rustDirectories);
+    }
+
+    private static rejectInstantiation(message: string): Promise<any> {
+        return Promise.reject(`Configuration creation failed: ${message}`);
     }
 }

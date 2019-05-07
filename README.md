@@ -26,12 +26,11 @@ Open your rust docs and view them in another tab on VS Code
 
 ## Upcoming changes
 
-- List rust folders with rust standard structure
-- Open multiple Rust docs per workspace (i.e. a workspace with multiple Rust projects)
-
 ## Release Notes
 
-The most basic functionality - viewing and searching of the docs
+## [1.0.6]
+- List rust folders with rust standard structure
+- Open multiple Rust docs per workspace (i.e. a workspace with multiple Rust projects)
 
 ## [1.0.5]
 - `vscode` dependencies contained a vulnerability. Updated package to latest with no gulp dependency

@@ -26,8 +26,8 @@ Open your rust docs and view them in another tab on VS Code
 
 ## Upcoming changes
 
- - Open docs from a provided path
- - Toolbar for managing docs location
+- List rust folders with rust standard structure
+- Open multiple Rust docs per workspace (i.e. a workspace with multiple Rust projects)
 
 ## Release Notes
 

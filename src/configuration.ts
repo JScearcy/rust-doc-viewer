@@ -1,9 +1,9 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
+import { parse } from 'toml';
 import { Option } from './option';
-import { readdir, createReadStream } from 'fs';
+import { existsSync, readdir, readFileSync } from 'fs';
 import { Utilities, Queue } from './utilities';
-import { createInterface } from 'readline';
 
 export class Configuration {
     private fsPathToDocs: string;
@@ -23,9 +23,8 @@ export class Configuration {
                 };
                 const quickPickSelection = await vscode.window.showQuickPick(subDirectories, quickPickOptions);
                 if (quickPickSelection) {
-                    const packageName = await this.getCargoPackageName(quickPickSelection);
-                    const docsPath = path.join(quickPickSelection, 'target', 'doc', packageName, 'index.html');
-                    return Promise.resolve(new Configuration(packageName, docsPath));
+                    const [packageName, packagePath] = await this.getCargoPackagePath(quickPickSelection);
+                    return Promise.resolve(new Configuration(packageName, packagePath));
                 } else {
                     return this.rejectInstantiation('Please select a folder to display');
                 }
@@ -47,25 +46,33 @@ export class Configuration {
         return this.workspaceName;
     }
 
-    private static async getCargoPackageName(projectFolderPath: string): Promise<string> {
+    private static async getCargoPackagePath(projectFolderPath: string): Promise<[string, string]> {
         const packageCargoPath = path.join(projectFolderPath, 'Cargo.toml');
-        const packageCargoReadStream = createReadStream(packageCargoPath);
-        let packageName = '';
-        const rl = createInterface({ input: packageCargoReadStream, });
-        await new Promise((resolve) => {
-            rl.on('line', (input: string) => {
-                if (input.includes('name')) {
-                    const nameQuoted = input
-                        .split(' = ')[1]
-                        .trim();
-                    // this is length - 2 to remove the last quote
-                    packageName = nameQuoted.substr(1, nameQuoted.length - 2);
-                    rl.close();
-                }
-            });
-            rl.on('close', () => resolve());
-        });
-        return packageName;
+        const packageCargoString = readFileSync(packageCargoPath, 'utf-8');
+        const packageCargo = parse(packageCargoString);
+        if (packageCargo.workspace) {
+            const quickPickOptions: vscode.QuickPickOptions = {
+                placeHolder: 'Select package from the workspace to display',
+            };
+            const packageName = await vscode.window.showQuickPick(packageCargo.workspace.members, quickPickOptions);
+            const packagePath = this.getPackagePath(projectFolderPath, packageName || '');
+            return [packageName || '', packagePath];
+        } else {
+            let packageName = packageCargo.package.name;
+            let packagePath = this.getPackagePath(projectFolderPath, packageName);
+            // if the name isn't a valid path to the index, check lib and bin names as it might be a split project
+            if (!existsSync(packagePath)) {
+                packageName = packageCargo.lib && packageCargo.lib.name;
+                packagePath = this.getPackagePath(projectFolderPath, packageName);
+            }
+
+            if (!existsSync(packagePath)) {
+                packageName = packageCargo.bin && packageCargo.bin.name;
+                packagePath = this.getPackagePath(projectFolderPath, packageName);
+            }
+
+            return [packageName, packagePath];
+        }
     }
 
     private static async getRustDirectories(workspaceFolders: vscode.WorkspaceFolder[]): Promise<string[]> {
@@ -99,6 +106,10 @@ export class Configuration {
         }
 
         return Array.from(rustDirectories);
+    }
+
+    private static getPackagePath(projectFolderPath: string, packageName: string): string {
+        return path.join(projectFolderPath, 'target', 'doc', packageName, 'index.html');
     }
 
     private static rejectInstantiation(message: string): Promise<any> {

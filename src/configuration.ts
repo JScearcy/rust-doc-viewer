@@ -54,25 +54,30 @@ export class Configuration {
             const quickPickOptions: vscode.QuickPickOptions = {
                 placeHolder: 'Select package from the workspace to display',
             };
-            const packageName = await vscode.window.showQuickPick(packageCargo.workspace.members, quickPickOptions);
-            const packagePath = this.getPackagePath(projectFolderPath, packageName || '');
-            return [packageName || '', packagePath];
+            const packageNameOpt = await vscode.window.showQuickPick(packageCargo.workspace.members, quickPickOptions);
+            const packageName = this.formatPackageName(packageNameOpt || '');
+            const packagePath = this.getPackagePath(projectFolderPath, packageName);
+            return [packageName, packagePath];
         } else {
-            let packageName = packageCargo.package.name;
+            let packageName = this.formatPackageName(packageCargo.package.name);
             let packagePath = this.getPackagePath(projectFolderPath, packageName);
             // if the name isn't a valid path to the index, check lib and bin names as it might be a split project
             if (!existsSync(packagePath)) {
-                packageName = packageCargo.lib && packageCargo.lib.name;
+                packageName = packageCargo.lib && this.formatPackageName(packageCargo.lib.name);
                 packagePath = this.getPackagePath(projectFolderPath, packageName);
             }
 
             if (!existsSync(packagePath)) {
-                packageName = packageCargo.bin && packageCargo.bin.name;
+                packageName = packageCargo.bin && this.formatPackageName(packageCargo.bin.name);
                 packagePath = this.getPackagePath(projectFolderPath, packageName);
             }
 
             return [packageName, packagePath];
         }
+    }
+
+    private static formatPackageName(packageName: string): string {
+        return packageName.split('-').join('_');
     }
 
     private static async getRustDirectories(workspaceFolders: vscode.WorkspaceFolder[]): Promise<string[]> {

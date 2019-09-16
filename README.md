@@ -25,6 +25,10 @@ Open your rust docs and view them in another tab on VS Code
 
 ## Release Notes
 
+### 1.0.8
+
+* Fix bug discovering docs with package that uses hyphens `-`, since rust replaces with them with an underscore `_`
+
 ### 1.0.7
 
 * Fix bug improperly discovering docs in a Rust workspace (Not VS Code workspace)

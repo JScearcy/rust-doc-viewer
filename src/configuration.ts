@@ -1,8 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { parse } from 'toml';
 import { Option } from './option';
-import { existsSync, readdir, readFileSync } from 'fs';
+import { readdir, readdirSync, statSync } from 'fs';
 import { Utilities, Queue } from './utilities';
 
 export class Configuration {
@@ -17,17 +16,25 @@ export class Configuration {
     static async createConfiguration(): Promise<Configuration> {
         if (vscode.workspace.workspaceFolders) {
             const subDirectories = await this.getRustDirectories(vscode.workspace.workspaceFolders);
-            if (subDirectories && subDirectories.length > 0) {
+            let quickPickSelection;
+            if (subDirectories && subDirectories.length === 1) {
+                quickPickSelection = subDirectories[0];
+            } else if (subDirectories && subDirectories.length > 0) {
                 const quickPickOptions: vscode.QuickPickOptions = {
                     placeHolder: 'Select project to display',
                 };
-                const quickPickSelection = await vscode.window.showQuickPick(subDirectories, quickPickOptions);
-                if (quickPickSelection) {
-                    const [packageName, packagePath] = await this.getCargoPackagePath(quickPickSelection);
-                    return Promise.resolve(new Configuration(packageName, packagePath));
-                } else {
-                    return this.rejectInstantiation('Please select a folder to display');
+                const quickPickSelectionOpt = await vscode.window.showQuickPick(subDirectories, quickPickOptions);
+                if (quickPickSelectionOpt) {
+                    quickPickSelection = quickPickSelectionOpt;
                 }
+            }
+
+            if (quickPickSelection) {
+                const [packageName, packagePath] = await this.getCargoPackagePath(quickPickSelection);
+                console.log(packageName, packagePath);
+                return Promise.resolve(new Configuration(packageName, packagePath));
+            } else {
+                return this.rejectInstantiation('Please select a folder to display');
             }
         }
 
@@ -47,33 +54,38 @@ export class Configuration {
     }
 
     private static async getCargoPackagePath(projectFolderPath: string): Promise<[string, string]> {
-        const packageCargoPath = path.join(projectFolderPath, 'Cargo.toml');
-        const packageCargoString = readFileSync(packageCargoPath, 'utf-8');
-        const packageCargo = parse(packageCargoString);
-        if (packageCargo.workspace) {
+        const packageTargetPath = path.join(projectFolderPath, 'target', 'doc');
+        const readDirs = readdirSync(packageTargetPath)
+            .reduce((docDirectories: string[], readdirItem) => {
+                const stats = statSync(path.join(packageTargetPath, readdirItem));
+                if (
+                    stats.isDirectory() &&
+                    readdirItem !== 'src' &&
+                    readdirItem !== 'implementors'
+                ) {
+                    docDirectories.push(readdirItem);
+                }
+
+                return docDirectories;
+            }, []);
+
+        if (readDirs.length > 1) {
             const quickPickOptions: vscode.QuickPickOptions = {
                 placeHolder: 'Select package from the workspace to display',
             };
-            const packageNameOpt = await vscode.window.showQuickPick(packageCargo.workspace.members, quickPickOptions);
-            const packageName = this.formatPackageName(packageNameOpt || '');
+            const packagePathOpt = await vscode.window.showQuickPick(readDirs, quickPickOptions);
+            if (packagePathOpt) {
+                const packageName = this.formatPackageName(packagePathOpt);
+                const packagePath = this.getPackagePath(projectFolderPath, packageName);
+                return [packageName, packagePath];
+            }
+        } else if (readDirs.length === 1) {
+            const packageName = this.formatPackageName(readDirs[0]);
             const packagePath = this.getPackagePath(projectFolderPath, packageName);
             return [packageName, packagePath];
-        } else {
-            let packageName = this.formatPackageName(packageCargo.package.name);
-            let packagePath = this.getPackagePath(projectFolderPath, packageName);
-            // if the name isn't a valid path to the index, check lib and bin names as it might be a split project
-            if (!existsSync(packagePath)) {
-                packageName = packageCargo.lib && this.formatPackageName(packageCargo.lib.name);
-                packagePath = this.getPackagePath(projectFolderPath, packageName);
-            }
-
-            if (!existsSync(packagePath)) {
-                packageName = packageCargo.bin && this.formatPackageName(packageCargo.bin.name);
-                packagePath = this.getPackagePath(projectFolderPath, packageName);
-            }
-
-            return [packageName, packagePath];
         }
+
+        return ['', ''];
     }
 
     private static formatPackageName(packageName: string): string {

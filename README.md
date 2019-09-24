@@ -25,6 +25,11 @@ Open your rust docs and view them in another tab on VS Code
 
 ## Release Notes
 
+### 1.0.9
+
+* Fix bug discovering docs with various supported workspace configurations
+* Remove dependency on `toml`
+
 ### 1.0.8
 
 * Fix bug discovering docs with package that uses hyphens `-`, since rust replaces with them with an underscore `_`

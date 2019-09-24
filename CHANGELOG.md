@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
+## [1.0.9] - 2019-09-23
+
+- Fix bug discovering docs with various supported workspace configurations
+- Remove dependency on `toml`
+
 ## [1.0.8] - 2019-09-15
 
 - Fix bug discovering docs with package that uses hyphens `-`, since rust replaces with them with an underscore `_`

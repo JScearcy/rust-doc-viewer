@@ -12,8 +12,6 @@ export interface Message {
     path?: string;
 }
 
-
-
 export interface Response {
     elId: string;
     el?: string;

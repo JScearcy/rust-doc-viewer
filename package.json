@@ -17,7 +17,7 @@
 		"color": "#0e95b7",
 		"theme": "dark"
 	},
-	"version": "1.0.9",
+	"version": "1.0.11",
 	"engines": {
 		"vscode": "^1.30.0"
 	},
@@ -49,5 +49,8 @@
 		"tslint": "^5.8.0",
 		"@types/node": "^8.10.25",
 		"@types/mocha": "^2.2.42"
+	},
+	"dependencies": {
+		"toml": "^3.0.0"
 	}
 }

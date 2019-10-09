@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
+## [1.0.11] - 2019-10-08
+
+- Discover all rust packages in workspace
+
+## [1.0.10] - 2019-09-25
+
+- Rollback 1.0.9
+
 ## [1.0.9] - 2019-09-23
 
 - Fix bug discovering docs with various supported workspace configurations

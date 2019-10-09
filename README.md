@@ -25,6 +25,14 @@ Open your rust docs and view them in another tab on VS Code
 
 ## Release Notes
 
+### 1.0.11
+
+* Discover all rust packages in workspace
+
+### 1.0.10
+
+* Rollback 1.0.9
+
 ### 1.0.9
 
 * Fix bug discovering docs with various supported workspace configurations

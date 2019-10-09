@@ -52,7 +52,7 @@ export class Configuration {
     getWorkspaceName(): string {
         return this.workspaceName;
     }
-
+  
     private static async getCargoPackagePath(projectFolderPath: string, packageNames: string[]): Promise<[string, string]> {
         const packageTargetPath = path.join(projectFolderPath, 'target', 'doc');
         const readDirs = readdirSync(packageTargetPath)

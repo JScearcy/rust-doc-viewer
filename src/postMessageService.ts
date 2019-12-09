@@ -3,14 +3,13 @@ import { Command, Message, Response } from './models';
 import { Utilities } from './utilities';
 
 export class PostMessageHandler {
-    constructor(private rustDocSrc: vscode.Uri) { }
+    constructor(private rustDocSrc: vscode.Uri, private workspaceState: vscode.Memento) { }
 
     handleMessage(message: Message): Response | null {
         switch (message.command) {
             case Command.getUrl:
                 if (message.el) {
                     const updatedHref = Utilities.hrefReplacer(message.el, this.rustDocSrc);
-
                     return { el: updatedHref, elId: message.elId };
                 }
                 return { elId: message.elId };
@@ -34,6 +33,14 @@ export class PostMessageHandler {
                     }
                 }
                 return { elId: message.elId };
+            case Command.setState:
+                if (message.state) {
+                    this.workspaceState.update('rustDocViewer', JSON.stringify(message.state));
+                }
+                return { elId: Command.setState.toString(), state: message.state };
+            case Command.getState:
+                let state: string = this.workspaceState.get('rustDocViewer', '{}');
+                return { elId: Command.getState.toString(), state };
         }
 
         return null;

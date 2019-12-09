@@ -25,7 +25,7 @@ export class RustDocViewer {
         );
         this.rustDocSrc = this.config.getUriToDocs();
         this.rustDocSrc.map((uri) => {
-            this.postMessageHandler = Option.lift(new PostMessageHandler(uri));
+            this.postMessageHandler = Option.lift(new PostMessageHandler(uri, context.workspaceState));
             return uri;
         });
         this.onDispose(disposeFn);
@@ -46,7 +46,7 @@ export class RustDocViewer {
         if (Option.isValue(this.postMessageHandler)) {
             const postMessageHandler = this.postMessageHandler.unwrap();
             const response = postMessageHandler.handleMessage(message);
-            if (response && response.el) {
+            if (response && (response.el || response.state)) {
                 this.currentPanel.webview.postMessage(response);
             } else if (response && response.page) {
                 this.render(response.page);

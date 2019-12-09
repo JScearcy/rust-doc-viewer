@@ -1,11 +1,51 @@
 enum Command {
-    getUrl,
-    newPage,
+    getUrl = 'getUrl',
+    newPage = 'newPage',
+    setState = 'setState',
+    getState = 'getState',
 }
 
 declare var acquireVsCodeApi: any;
+declare var switchTheme: any;
 
-(function (vscode) {
+const vscode = acquireVsCodeApi();
+
+interface WindowExtensions {
+    usableLocalStorage: () => boolean;
+    updateLocalStorage: (name: string, value: string) => void;
+    getCurrentValue: (name: string) => string;
+}
+
+class CookieShim {
+    private static cookieShimWindowExtensions: WindowExtensions = Object.assign(window, {
+        usableLocalStorage: () => true, 
+        updateLocalStorage: (name: string, value: any) => {
+            const state = { [name]: value };
+            vscode.setState(state);
+            vscode.postMessage({
+                elId: Command.setState,
+                command: Command.setState,
+                state,
+            });
+        },
+        getCurrentValue: (name: string) => {
+             const state = vscode.getState();
+             return state && state[name] || 'light';
+         }
+     });
+
+    static set(newState: { 'rustdoc-theme': string }) {
+        CookieShim.cookieShimWindowExtensions.updateLocalStorage('rustdoc-theme', newState['rustdoc-theme']);
+    }
+
+    static switch() {
+        const currentTheme = document.getElementById("themeStyle");
+        const mainTheme = document.getElementById("mainThemeStyle");
+        switchTheme(currentTheme, mainTheme, CookieShim.cookieShimWindowExtensions.getCurrentValue('rustdoc-theme'));
+    }
+}
+
+(function (vscode: any, window: any) {
     setTimeout(() => {
         const hrefs = Array.from(document.querySelectorAll('[href]'))
             .filter(el => (<any>el).href === '');
@@ -23,11 +63,17 @@ declare var acquireVsCodeApi: any;
         });
     }, 500);
 
-    window.addEventListener('message', (e) => {
+    window.addEventListener('message', (e: any) => {
         const message = e.data;
-        const elToUpdate = document.getElementById(message.elId);
-        if (elToUpdate) {
-            elToUpdate.outerHTML = message.el;
+        if (message.elId === Command.getState.toString()) {
+            const state = JSON.parse(message.state);
+            CookieShim.set(state);
+            CookieShim.switch();
+        } else {
+            const elToUpdate = document.getElementById(message.elId);
+            if (elToUpdate) {
+                elToUpdate.outerHTML = message.el;
+            }
         }
     });
 
@@ -85,4 +131,9 @@ declare var acquireVsCodeApi: any;
         return element.classList.contains('crate')
             || element.tagName === 'A';
     }
-})(acquireVsCodeApi());
+
+    vscode.postMessage({
+        elId: Command.getState,
+        command: Command.getState,
+    });
+})(vscode, window);

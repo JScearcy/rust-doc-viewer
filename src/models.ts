@@ -1,8 +1,10 @@
 import * as vscode from 'vscode';
 
 export enum Command {
-	getUrl,
-	newPage,
+    getUrl = 'getUrl',
+    newPage = 'newPage',
+    setState = 'setState',
+    getState = 'getState',
 }
 
 export interface Message {
@@ -10,10 +12,12 @@ export interface Message {
     elId: string;
     el?: string;
     path?: string;
+    state?: string;
 }
 
 export interface Response {
     elId: string;
     el?: string;
     page?: vscode.Uri;
+    state?: string;
 }

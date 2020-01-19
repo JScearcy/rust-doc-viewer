@@ -86,25 +86,26 @@ export class RustDocViewer {
                 if (err) { reject(err); }
                 const dataString = data.toString('utf8');
                 const updatedHrefData = Utilities.hrefReplacer(dataString, src);
-                let updatedSrcData = Utilities.srcReplacer(updatedHrefData, src);
+                const updatedSrcData = Utilities.srcReplacer(updatedHrefData, src);
 
                 const localScriptUri = vscode.Uri.file(path.join(extensionPath, 'out', 'vscodeSanitizer.js'))
                     .with({ scheme: 'vscode-resource' }).toString();
-                const removePushStateSpot = updatedSrcData
+                const [removePushStateSpotBefore, removePushStateSpotAfter ] = updatedSrcData
                     .split('<body>');
-                const removePushStateStr = [
-                    removePushStateSpot[0],
-                    `<body><script>window.history.pushState=null</script>`,
-                    removePushStateSpot[1],
-                ].join('');
-                const rustScriptSpot = removePushStateStr
+                const noPushStateStr = [
+                        removePushStateSpotBefore,
+                        `<body><script>window.history.pushState=null</script>`,
+                        removePushStateSpotAfter
+                    ].join('');
+                const  [rustScriptSpotBefore, rustScriptSpotAfter] = noPushStateStr
                     .split('</body>');
-                updatedSrcData = [
-                    rustScriptSpot[0],
+                const formattedDocument = [
+                    rustScriptSpotBefore,
                     `<script src="${localScriptUri}"></script></body>`,
-                    rustScriptSpot[1]
+                    rustScriptSpotAfter
                 ].join('');
-                resolve(updatedSrcData);
+
+                resolve(formattedDocument);
             });
         });
     }

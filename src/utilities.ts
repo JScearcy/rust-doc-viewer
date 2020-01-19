@@ -8,7 +8,7 @@ export class Utilities {
     }
     
     static srcReplacer(data: string, srcPath: vscode.Uri): string {
-        const srcMatcher = /src="([a-zA-Z0-9-\.\/]+)"/g;
+        const srcMatcher = /src=["']([a-zA-Z0-9-\.\/]+)["']/g;
         return Utilities.pathReplacer(srcMatcher, data, srcPath, (newPath) => `src="${newPath}"`);
     }
     
@@ -41,11 +41,11 @@ export class Queue<T> {
     private line: T[] = [];
     
     enqueue(item: T) {
-        this.line.push(item);
+        this.line = [ ...this.line, item ];
     }
     
     enqueueMany(items: T[]) {
-        items.forEach(item => this.line.push(item));
+        this.line = [ ...this.line, ...items ];
     }
 
     dequeue(): T {

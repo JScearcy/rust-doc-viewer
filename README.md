@@ -25,6 +25,16 @@ Open your rust docs and view them in another tab on VS Code
 
 ## Release Notes
 
+## 2.0.1
+
+* Fix bug preventing anchor tags from being modified if the element contains a `#` char
+
+## 2.0.0
+
+* Update dependencies to latest
+* Add additional doc path handling to cover `vscode-webview-resource` html files
+* Reduce wait time in webview script to fix dynamic anchor elements
+
 ### 1.0.11
 
 * Discover all rust packages in workspace

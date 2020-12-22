@@ -7,6 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
+## [2.0.1] - 2020-12-23
+
+- Fix bug preventing anchor tags from being modified if the element contains a `#` char
+
+## [2.0.0] - 2020-12-21
+
+- Move from `master` branch to `mainline`
+- Update dependencies to latest
+- Add additional doc path handling to cover `vscode-webview-resource` html files
+- Reduce wait time in webview script to fix dynamic anchor elements
+
 ## [1.0.11] - 2019-10-08
 
 - Discover all rust packages in workspace

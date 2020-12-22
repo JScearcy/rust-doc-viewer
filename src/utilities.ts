@@ -4,7 +4,17 @@ import * as path from 'path';
 export class Utilities {
     static hrefReplacer(data: string, srcPath: vscode.Uri): string {
         const linkMatcher = /href=["']([a-zA-Z0-9_\-#\.\/]+)["']/g;
-        return Utilities.pathReplacer(linkMatcher, data, srcPath, (newPath) => `href="${newPath}"`);
+        const webviewLinkMatcher = /href=["']vscode-webview-resource:\/\/[\d\w-]+\/file\/\/([a-zA-Z0-9_\-#\.\/:]+).html["']/g;
+        if (webviewLinkMatcher.test(data)) {
+            return data.replace(webviewLinkMatcher, (_, pathMatch) => {
+                const path = vscode.Uri.file(`${pathMatch}.html`)
+                    .with({ scheme: 'vscode-resource' })
+                    .toString(true);
+                return `href="${path}"`;
+            });
+        } else {
+            return Utilities.pathReplacer(linkMatcher, data, srcPath, (newPath) => `href="${newPath}"`);
+        }
     }
     
     static srcReplacer(data: string, srcPath: vscode.Uri): string {

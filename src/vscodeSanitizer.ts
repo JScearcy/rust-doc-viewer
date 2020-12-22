@@ -48,11 +48,10 @@ class CookieShim {
 (function (vscode: any, window: any) {
     setTimeout(() => {
         const hrefs = Array.from(document.querySelectorAll('[href]'))
-            .filter(el => (<any>el).href === '');
+            .filter(el => (<any>el).href !== '');
         hrefs.forEach((el, idx) => {
             const elId = idx.toString();
-            const elHtml = el.outerHTML;
-            if (!elHtml.includes('#')) {
+            if (!(<HTMLAnchorElement>el).href.includes('#')) {
                 el.id = elId;
                 vscode.postMessage({
                     elId: elId,
@@ -61,7 +60,7 @@ class CookieShim {
                 });
             }
         });
-    }, 500);
+    }, 100);
 
     window.addEventListener('message', (e: any) => {
         const message = e.data;

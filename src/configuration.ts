@@ -1,146 +1,123 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
-import { Option } from './option';
-import { readdir, readdirSync, readFile, statSync } from 'fs';
-import { parse } from 'toml';
-import { Utilities, Queue } from './utilities';
+import * as Queue from './utils/queue';
+import { readdir, readFile } from 'fs/promises';
+import { Option, some, none, Some, isSome } from 'fp-ts/Option';
+import { Dirent, existsSync } from 'fs';
+import { parse } from '@iarna/toml';
 
-export class Configuration {
-    private fsPathToDocs: string;
-    private workspaceName: string;
+export type Configuration = {
+  customTargetDir: Option<string>;
+  docsName: Option<string>;
+  docsPath: Option<string>;
+  extensionPath: string;
+};
 
-    constructor(workspaceName: string, workspacePath: string) {
-        this.workspaceName = workspaceName;
-        this.fsPathToDocs = workspacePath;
+export const defaultConfig = () => ({ customTargetDir: none, docsPath: none });
+
+export const getConfiguration = async (extensionPath: string): Promise<Option<Configuration>> => {
+  const workspaces = vscode.workspace.workspaceFolders;
+  if (workspaces && workspaces.length > 0) {
+    let docsPathWs = workspaces[0];
+    if (workspaces.length > 1) {
+      const quickPickSelectionOpt = await showQuickPick(
+        workspaces.map((ws) => ws.name),
+        { placeHolder: 'Select workspace to display' }
+      );
+      if (quickPickSelectionOpt) {
+        docsPathWs = workspaces.find((ws) => ws.name === quickPickSelectionOpt)!;
+      }
     }
 
-    static async createConfiguration(): Promise<Configuration> {
-        if (vscode.workspace.workspaceFolders) {
-            const [subDirectories, packageNames] = await this.getRustDirectories(vscode.workspace.workspaceFolders);
-            let quickPickSelection;
-            if (subDirectories && subDirectories.length === 1) {
-                quickPickSelection = subDirectories[0];
-            } else if (subDirectories && subDirectories.length > 0) {
-                const quickPickOptions: vscode.QuickPickOptions = {
-                    placeHolder: 'Select project to display',
-                };
-                const quickPickSelectionOpt = await vscode.window.showQuickPick(subDirectories, quickPickOptions);
-                if (quickPickSelectionOpt) {
-                    quickPickSelection = quickPickSelectionOpt;
-                }
-            }
-
-            if (quickPickSelection) {
-                const [packageName, packagePath] = await this.getCargoPackagePath(quickPickSelection, packageNames);
-                return Promise.resolve(new Configuration(packageName, packagePath));
-            } else {
-                return this.rejectInstantiation('Please select a folder to display');
-            }
+    let docsPath: Option<string> = none;
+    let docsName: Option<string> = none;
+    const docsInfo = await getDocsInfo(docsPathWs);
+    if (isSome(docsInfo)) {
+      const { docsPaths, names } = docsInfo.value;
+      let name: string | undefined = names[0];
+      if (names.length > 1) {
+        name = await showQuickPick(names, { placeHolder: 'Select crate to display' });
+      }
+      if (name) {
+        docsName = some(name);
+        for (let docPath of docsPaths) {
+          // cargo doc outputs docs in a folder using '_' when the name may be '-', so check both
+          const pathCand = path.join(docPath, name);
+          const pathCand2 = path.join(docPath, name.replace(/-/g, '_'));
+          if (existsSync(pathCand)) {
+            docsPath = some(pathCand);
+          } else if (existsSync(pathCand2)) {
+            docsPath = some(pathCand2);
+          }
         }
-
-        return this.rejectInstantiation('Could not find a valid folder within the workspace/selected workspace folder');
+      }
     }
 
-    getUriToDocs(): Option<vscode.Uri> {
-        if (this.fsPathToDocs !== '') {
-            return Option.lift(vscode.Uri.file(this.fsPathToDocs).with({ scheme: 'vscode-resource' }));
+    return some({
+      customTargetDir: none,
+      docsName,
+      docsPath,
+      extensionPath,
+    });
+  }
+
+  return none;
+};
+
+// only a (very) partial impl of a valid Cargo.toml, expand if needed
+type CrateType = {
+  workspace?: { members: string[] }[];
+  package?: { name: string };
+};
+const getDocsInfo = async (base: vscode.WorkspaceFolder): Promise<Option<{ names: string[]; docsPaths: string[] }>> => {
+  const docsInfo = await bfsDir(base.uri.fsPath, (dir) => dir.name === 'Cargo.toml' || dir.name === 'doc').then(
+    (dirs) => {
+      return dirs.reduce(async (acc, path) => {
+        if (path.includes('Cargo')) {
+          try {
+            const fileData = await readFile(path, 'utf-8');
+            const crate: CrateType = parse(fileData);
+            if (crate.package?.name) {
+              acc.then((data) => {
+                data.names.push(crate.package!.name);
+              });
+            }
+            // TODO: bubble to user
+          } catch (e) {
+            console.log('toml parse error in ', path, 'err:', e);
+          }
         } else {
-            return Option.lift<vscode.Uri>();
+          acc.then((data) => {
+            data.docsPaths.push(path);
+            return data;
+          });
         }
+        return acc;
+      }, Promise.resolve({ names: [] as string[], docsPaths: [] as string[] }));
     }
+  );
+  return some(docsInfo);
+};
 
-    getWorkspaceName(): string {
-        return this.workspaceName;
+const bfsDir = async (basePath: string, comparator: (dir: Dirent) => boolean) => {
+  const paths = Queue.fromArray([basePath]);
+  const accumulator = [];
+  while (paths.length > 0) {
+    const currPath = (Queue.dequeue(paths) as Some<string>).value;
+    const dirs = await readdir(currPath, { withFileTypes: true });
+    for (let dir of dirs) {
+      const newPath = path.join(currPath, dir.name);
+      if (comparator(dir)) {
+        accumulator.push(newPath);
+      } else if (dir.isDirectory()) {
+        Queue.enqueue(paths, newPath);
+      }
     }
-  
-    private static async getCargoPackagePath(projectFolderPath: string, packageNames: string[]): Promise<[string, string]> {
-        const packageTargetPath = path.join(projectFolderPath, 'target', 'doc');
-        const readDirs = readdirSync(packageTargetPath)
-            .reduce((docDirectories: string[], readdirItem) => {
-                const stats = statSync(path.join(packageTargetPath, readdirItem));
-                if (
-                    stats.isDirectory() &&
-                    packageNames.some(item => item === readdirItem)
-                ) {
-                    docDirectories.push(readdirItem);
-                }
+  }
 
-                return docDirectories;
-            }, []);
+  return accumulator;
+};
 
-        if (readDirs.length > 1) {
-            const quickPickOptions: vscode.QuickPickOptions = {
-                placeHolder: 'Select package from the workspace to display',
-            };
-            const packagePathOpt = await vscode.window.showQuickPick(readDirs, quickPickOptions);
-            if (packagePathOpt) {
-                const packageName = this.formatPackageName(packagePathOpt);
-                const packagePath = this.getPackagePath(projectFolderPath, packageName);
-                return [packageName, packagePath];
-            }
-        } else if (readDirs.length === 1) {
-            const packageName = this.formatPackageName(readDirs[0]);
-            const packagePath = this.getPackagePath(projectFolderPath, packageName);
-            return [packageName, packagePath];
-        }
-
-        return ['', ''];
-    }
-
-    private static formatPackageName(packageName: string): string {
-        return packageName.split('-').join('_');
-    }
-
-    private static async getRustDirectories(workspaceFolders: vscode.WorkspaceFolder[]): Promise<[string[], string[]]> {
-        const rustDirectories = new Set<string>();
-        const rustPackages = new Set<string>();
-        for (let i = 0; i < workspaceFolders.length; i++) {
-            const workspaceFolder = workspaceFolders[i];
-            const [subDirectories, packages] = await this.getRustSubDirectories(workspaceFolder);
-            subDirectories.forEach(dir => rustDirectories.add(dir));
-            packages.forEach((val) => rustPackages.add(this.formatPackageName(val)));
-        }
-
-        return [Array.from(rustDirectories), Array.from(rustPackages)];
-    }
-
-    private static async getRustSubDirectories(workspaceFolder: vscode.WorkspaceFolder): Promise<[string[], string[]]> {
-        const readDirPromise = Utilities.toPromise(readdir);
-        const readFilePromise = Utilities.toPromise(readFile); 
-        const targetDirectories = new Set<string>();
-        const packageNames = new Set<string>();
-        const subDirQueue = new Queue<string>();
-        subDirQueue.enqueue(workspaceFolder.uri.fsPath);
-
-        while (!subDirQueue.isEmpty()) {
-            const folderToSearch = subDirQueue.dequeue();
-            const folderChildren = await readDirPromise<string[]>(folderToSearch).catch(() => [] as string[]);
-            if (folderChildren.indexOf('target') >= 0) {
-                targetDirectories.add(folderToSearch);
-            }
-            if (folderChildren.indexOf('Cargo.toml') >= 0) {
-                const cargoPath = path.join(folderToSearch, 'Cargo.toml');
-                const cargoFile: string = await readFilePromise(cargoPath, { encoding: 'utf8' });
-                const cargoFileDeserialized = parse(cargoFile);
-                if (cargoFileDeserialized && cargoFileDeserialized.package) {
-                    packageNames.add(cargoFileDeserialized.package.name);
-                }
-            }
-
-            const visibleChildren = folderChildren
-                .filter(folder => !(/(^|\/)\.[^\/\.]/g).test(folder))
-                .map(folder => path.join(folderToSearch, folder));
-            subDirQueue.enqueueMany(visibleChildren);
-        }
-
-        return [Array.from(targetDirectories), Array.from(packageNames)];
-    }
-
-    private static getPackagePath(projectFolderPath: string, packageName: string): string {
-        return path.join(projectFolderPath, 'target', 'doc', packageName, 'index.html');
-    }
-
-    private static rejectInstantiation(message: string): Promise<any> {
-        return Promise.reject(`Configuration creation failed: ${message}`);
-    }
-}
+const showQuickPick = (items: string[], options: vscode.QuickPickOptions) => {
+  return vscode.window.showQuickPick(items, options);
+};

@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
+## [3.0.0] - 2022-06-28
+
+- Improve performance
+- Handle additional link cases
+
 ## [2.0.1] - 2020-12-23
 
 - Fix bug preventing anchor tags from being modified if the element contains a `#` char

@@ -31,5 +31,5 @@ export const navigatePanel = (vscode: WebviewApi<any>) => {
   });
   historyNav.appendChild(backBtn);
   historyNav.appendChild(forwardBtn);
-  document.body.prepend(historyNav);
+  // document.body.prepend(historyNav);
 };

@@ -19,7 +19,7 @@ const getInitialState = (): State => ({
   },
 });
 
-const stateSubject = new BehaviorSubject<State>(getInitialState());
+let stateSubject = new BehaviorSubject<State>(getInitialState());
 
 const updateInternal = <T>(state: State, { payload, actionType }: Action<T>) => {
   switch (actionType) {

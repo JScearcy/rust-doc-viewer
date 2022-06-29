@@ -28,7 +28,7 @@ describe('load util', () => {
   });
 
   it('should update with set error on error', async () => {
-    const mockError = Error('mock error');
+    const mockError = 'mock error';
     mockReadFile.mockRejectedValue(mockError);
     const mockPath = './mockPath';
     await loadDoc(mockPath);

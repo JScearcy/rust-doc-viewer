@@ -1,17 +1,17 @@
-import { distinctUntilChanged } from 'rxjs';
-import { slice, StateKey, update } from '../utils/state';
-import { isEqual } from 'lodash';
+import { State, StateKey, update } from '../utils/state';
 import { subscriptionToDisposable } from '../utils';
 import { setErrorReset } from '../utils/actions';
-import * as vscode from 'vscode';
+import { showError } from '../utils/error';
+import { ListenerOpts } from './listener';
 
-export const errorListener = () => {
+export const errorListener = ({ slice }: ListenerOpts<Pick<State, StateKey.errors>>) => {
   return subscriptionToDisposable(
-    slice([StateKey.errors])
-      .pipe(distinctUntilChanged((a, b) => isEqual(a, b)))
+    slice
       .subscribe(({ errors }) => {
-        errors.map((err) => vscode.window.showErrorMessage(err));
-        update(setErrorReset());
+        if (errors.length > 0) {
+          errors.map((err) => showError(err));
+          update(setErrorReset());
+        }
       })
   );
 };

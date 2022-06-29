@@ -2,7 +2,7 @@ import { Command, CommandKey } from './command';
 import * as CookieShim from './cookieShim';
 import { navigatePanel } from './navigation';
 import { WebviewApi } from 'vscode-webview';
-import { navigateClickHandler } from './clickHandlers';
+import { eventShouldBubble, navigateClickHandler } from './clickHandlers';
 
 declare var acquireVsCodeApi: () => WebviewApi<any>;
 
@@ -22,6 +22,10 @@ const vscode = acquireVsCodeApi();
   });
 
   document.addEventListener('click', (e) => {
+    if (eventShouldBubble(e.target as Element)) {
+      return;
+    }
+
     e.preventDefault();
     e.stopPropagation();
     const element = e.target as HTMLElement;
@@ -31,6 +35,9 @@ const vscode = acquireVsCodeApi();
       const elToScrollTo = document.getElementById(id);
       if (elToScrollTo) {
         elToScrollTo.scrollIntoView();
+      } else {
+        message.commandType = CommandKey.newPage;
+        vscode.postMessage(message);
       }
     } else if (message) {
       vscode.postMessage(message);

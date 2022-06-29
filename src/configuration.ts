@@ -5,6 +5,7 @@ import { readdir, readFile } from 'fs/promises';
 import { Option, some, none, Some, isSome } from 'fp-ts/Option';
 import { Dirent, existsSync } from 'fs';
 import { parse } from '@iarna/toml';
+import { showError } from './utils/error';
 
 export type Configuration = {
   customTargetDir: Option<string>;
@@ -83,7 +84,8 @@ const getDocsInfo = async (base: vscode.WorkspaceFolder): Promise<Option<{ names
               });
             }
             // TODO: bubble to user
-          } catch (e) {
+          } catch (e: any) {
+            showError(`toml parse error in ${path}, error: ${e.message}`);
             console.log('toml parse error in ', path, 'err:', e);
           }
         } else {

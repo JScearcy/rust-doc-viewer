@@ -1,6 +1,6 @@
 import * as vscode from 'vscode';
 import { getConfiguration } from './configuration';
-import { update } from './utils/state';
+import { slice, StateKey, update } from './utils/state';
 import { processListener } from './doc-listener/process';
 import { renderListener } from './doc-listener/render';
 import { setBatch, setConfig, setReset, setUserHistory } from './utils/actions';
@@ -13,7 +13,7 @@ export function activate(context: vscode.ExtensionContext) {
   console.log('"rust-doc-viewer" is now active');
   let viewRef: Option<vscode.WebviewPanel> = none;
   const disposable = vscode.commands.registerCommand('extension.rustDocViewer', async () => {
-    const errorSub = errorListener();
+    const errorSub = errorListener({ slice: slice([StateKey.errors]) });
     const initConfig = await getConfiguration(context.extensionPath);
     if (isNone(viewRef)) {
       viewRef = some(
@@ -28,7 +28,7 @@ export function activate(context: vscode.ExtensionContext) {
       );
     }
     if (isSome(viewRef)) {
-      const configSub = configListener();
+      const configSub = configListener({ slice: slice([StateKey.configuration, StateKey.pageKey]) });
       const processSub = processListener(viewRef.value);
       const renderSub = renderListener(viewRef.value);
       const postMessageSub = postMessageListener(viewRef.value, context.workspaceState);

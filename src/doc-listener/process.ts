@@ -23,7 +23,7 @@ const rustDocVarAttributes = {
   dataRootPath: 'data-root-path',
   dataSearch: 'data-search-js',
   dataSearchIndex: 'data-search-index-js',
-};
+} as const;
 const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string) =>
   new htmlparser2.Parser({
     onopentag(name, attributes) {
@@ -80,7 +80,7 @@ const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string) =
     },
 
     onerror(err) {
-      update(setError([err]));
+      update(setError([err.message]));
     },
   });
 

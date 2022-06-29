@@ -28,7 +28,7 @@ export const setBatch = <T>(actions: T[]) => {
   return { actionType: ActionType.Batch, payload: actions };
 };
 
-export const setError = (err: Error[]): Action<Error[]> => {
+export const setError = (err: string[]): Action<string[]> => {
   return { actionType: ActionType.PushError, payload: err };
 };
 

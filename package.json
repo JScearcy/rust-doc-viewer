@@ -21,6 +21,7 @@
     "vscode": "^1.30.0"
   },
   "categories": [
+    "Programming Languages",
     "Other"
   ],
   "activationEvents": [
@@ -38,11 +39,12 @@
   "scripts": {
     "vscode:prepublish": "npm run build",
     "build": "npm run test:unit && npm run esbuild",
-    "esbuild": "node ./esbuild.config.js",
+    "esbuild": "node ./esbuild.config.mjs",
     "prettier:write": "prettier --write src/",
     "prettier:write:test": "prettier --write tests/",
     "test:integ": "npm run esbuild && node out/test/runTest.js",
-    "test:unit": "jest"
+    "test:unit": "jest",
+    "test:watch": "jest --watch"
   },
   "devDependencies": {
     "@babel/core": "^7.16.5",

@@ -1,5 +1,11 @@
 import { CommandKey } from './command';
 
+const bubbleTargets = ['SUMMARY'];
+
+export const eventShouldBubble = (element: Element) => {
+  return bubbleTargets.includes(element.tagName);
+};
+
 export const navigateClickHandler = (element: HTMLElement) => {
   const el = getElementToHandle(element);
   if (el) {
@@ -10,6 +16,7 @@ export const navigateClickHandler = (element: HTMLElement) => {
         commandType: CommandKey.navigateAnchor,
         payload: {
           id,
+          path: href
         },
       };
     } else if (href === '') {

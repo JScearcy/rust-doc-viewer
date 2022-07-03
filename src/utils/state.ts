@@ -1,4 +1,4 @@
-import { Option, none } from 'fp-ts/Option';
+import { Option, none, some } from 'fp-ts/Option';
 import { isEqual } from 'lodash';
 import { BehaviorSubject, distinctUntilChanged, map, Observable } from 'rxjs';
 
@@ -6,11 +6,19 @@ import { Configuration } from '../configuration';
 
 import { Action, ActionType } from './actions';
 
+export enum PageKeyType {
+  StdDoc,
+  LocalDoc,
+}
+
 const getInitialState = (): State => ({
   configuration: none,
   errors: [],
   loadedPage: false,
-  pageKey: 'index.html',
+  pageKey: {
+    type: PageKeyType.LocalDoc,
+    val: some('index.html'),
+  },
   parsedDoc: none,
   rawDoc: none,
   userHistory: {
@@ -24,11 +32,10 @@ let stateSubject = new BehaviorSubject<State>(getInitialState());
 const updateInternal = <T>(state: State, { payload, actionType }: Action<T>) => {
   switch (actionType) {
     case ActionType.Batch: {
-      const newState = (payload as any).reduce(
+      return (payload as any).reduce(
         (stateAcc: State, currAct: Action<unknown>) => updateInternal(stateAcc, currAct),
         state
       );
-      return newState;
     }
     case ActionType.PushError: {
       const newErrors = payload as any;
@@ -48,7 +55,7 @@ const updateInternal = <T>(state: State, { payload, actionType }: Action<T>) => 
       return { ...state, userHistory: { paths: state.userHistory.paths, cursor: payload } };
     }
     case ActionType.SetPageKey: {
-      return { ...state, pageKey: (payload as any).value };
+      return { ...state, pageKey: payload as any };
     }
     case ActionType.SetParsedDoc: {
       return { ...state, parsedDoc: payload as any };
@@ -86,13 +93,18 @@ export type State = {
   [StateKey.configuration]: Option<Configuration>;
   [StateKey.errors]: string[];
   [StateKey.loadedPage]: boolean;
-  [StateKey.pageKey]: string;
+  [StateKey.pageKey]: PageKey;
   [StateKey.parsedDoc]: Option<string>;
   [StateKey.rawDoc]: Option<string>;
   [StateKey.userHistory]: {
-    paths: { docsPath: Option<string>; key: Option<string> }[];
+    paths: { docsPath: Option<string>; key: PageKey }[];
     cursor: number;
   };
+};
+
+export type PageKey = {
+  val: Option<string>;
+  type: PageKeyType;
 };
 
 export const update = <T>(action: Action<T>) => {

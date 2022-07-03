@@ -1,17 +1,16 @@
-import { shareReplay } from 'rxjs';
+import { shareReplay, Subscription } from 'rxjs';
 import { TestScheduler } from 'rxjs/testing';
-import { Disposable } from 'vscode';
 import { errorListener } from '../../src/doc-listener/error';
 import { setError } from '../../src/utils/actions';
 import { slice, StateKey, update } from '../../src/utils/state';
 
 describe('error listener', () => {
-  let cleanupSub: Disposable | null;
+  let cleanupSub: Subscription | null;
   let testScheduler: TestScheduler;
   
   beforeEach(() => {
     if (cleanupSub) {
-      cleanupSub.dispose();
+      cleanupSub.unsubscribe();
       cleanupSub = null;
     }
     testScheduler = new TestScheduler((actual, expected) => expect(actual).toEqual(expected));

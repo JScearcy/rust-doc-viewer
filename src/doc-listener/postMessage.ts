@@ -1,36 +1,57 @@
-import { alt, isSome, none, Option, some } from 'fp-ts/Option';
+import { alt, fromNullable, isSome, none, Option, some } from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
 import { sep } from 'path';
 import { combineLatest, distinctUntilChanged, Observable } from 'rxjs';
-import { Disposable, Memento, WebviewPanel } from 'vscode';
+import { env, Disposable, Memento, Uri, WebviewPanel } from 'vscode';
 import { Command, CommandKey } from '../client/command';
 import { setBatch, setConfig, setHistoryCursor, setPageKey, setUserHistory } from '../utils/actions';
-import { slice, StateKey, update } from '../utils/state';
+import { PageKeyType, State, StateKey, update } from '../utils/state';
 import { isEqual } from 'lodash';
 import { URL } from 'url';
 import { existsSync } from 'fs';
 import { HistoryAction } from '../client/navigation';
+import { isExternal } from '../utils';
+import { ListenerOpts } from './listener';
 
-export const postMessageListener = (view: WebviewPanel, workspaceState: Memento) => {
+type PostMessageListenerOpts = ListenerOpts<Pick<State, StateKey.configuration | StateKey.userHistory>> & {
+  view: WebviewPanel;
+  workspaceState: Memento;
+};
+
+const docPathRegex = /^\/.*\/((?:std|core)\/.*)/;
+export const postMessageListener = ({ slice, view, workspaceState }: PostMessageListenerOpts) => {
   const disposables: Disposable[] = [];
   const messageObservable = new Observable<Command>((sub) => {
     view.webview.onDidReceiveMessage((e: Command) => sub.next(e), null, disposables);
   });
-  const subscription = combineLatest([slice([StateKey.configuration, StateKey.userHistory]), messageObservable])
+  return combineLatest([slice, messageObservable])
     .pipe(distinctUntilChanged((a, b) => isEqual(a[1], b[1])))
     .subscribe(([exState, command]) => {
       const { configuration, userHistory } = exState;
       const { commandType, payload } = command;
       switch (commandType) {
         case CommandKey.newPage: {
-          if (payload.path && isSome(configuration) && isSome(configuration.value.docsPath)) {
+          if (isExternal(payload.path)) {
+            const externalUri = Uri.parse(payload.path);
+            if(isSome(configuration) && isSome(configuration.value.rustStdPath)) {
+              const docKeyMatch = externalUri.path.match(docPathRegex);
+              if(docKeyMatch) {
+                const docsPath = configuration.value.rustStdPath;
+                const newConfig = { ...configuration.value, docsPath };
+                const key = fromNullable(docKeyMatch[1]);
+                update(setBatch([setConfig(some(newConfig)), setPageKey({ val: key, type: PageKeyType.StdDoc }), setUserHistory([{ docsPath, key }])]));
+                break;
+              }
+            }
+            env.openExternal(externalUri);
+          } else if (payload.path && isSome(configuration) && isSome(configuration.value.docsPath)) {
             const [docsPathCand, key] = getNewPathData(payload.path);
             const docsPath = pipe(
               docsPathCand,
               alt(() => configuration.value.docsPath)
             );
             const newConfig = { ...configuration.value, docsPath };
-            update(setBatch([setConfig(some(newConfig)), setPageKey(key), setUserHistory([{ docsPath, key }])]));
+            update(setBatch([setConfig(some(newConfig)), setPageKey({ val: key, type: PageKeyType.LocalDoc }), setUserHistory([{ docsPath, key }])]));
           }
           break;
         }
@@ -71,14 +92,6 @@ export const postMessageListener = (view: WebviewPanel, workspaceState: Memento)
         }
       }
     });
-  const dispose = () => {
-    disposables.forEach((dis) => dis.dispose());
-    subscription.unsubscribe();
-  };
-
-  return {
-    dispose,
-  };
 };
 
 const getNewPathData = (path: string): Option<string>[] => {

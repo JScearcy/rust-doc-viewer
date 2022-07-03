@@ -28,12 +28,12 @@ describe('load util', () => {
   });
 
   it('should update with set error on error', async () => {
-    const mockError = 'mock error';
+    const mockError = new Error('mock error');
     mockReadFile.mockRejectedValue(mockError);
     const mockPath = './mockPath';
     await loadDoc(mockPath);
 
-    const expectedUpdate = setError([mockError]);
+    const expectedUpdate = setError([mockError.message]);
 
     expect(mockReadFile).toBeCalledWith(join(mockPath), 'utf-8');
     expect(state.update).toBeCalledWith(expectedUpdate);

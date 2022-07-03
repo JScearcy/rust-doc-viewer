@@ -5,6 +5,9 @@ const window = {
 };
 
 const workspace = {
+  getConfiguration: () => ({ 
+    get: jest.fn(),
+  }),
   workspaceFolders: [],
 };
 

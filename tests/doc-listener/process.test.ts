@@ -1,21 +1,23 @@
 import { none, some } from 'fp-ts/lib/Option';
+import { Subscription } from 'rxjs';
 import { TestScheduler } from 'rxjs/testing';
-import { Disposable, Webview, WebviewPanel } from 'vscode';
+import { Webview, WebviewPanel } from 'vscode';
 import { processListener } from '../../src/doc-listener/process';
 import { setBatch, setConfig, setParsedDoc, setRawDoc } from '../../src/utils/actions';
-import { slice, StateKey, update } from '../../src/utils/state';
+import { PageKeyType, slice, StateKey, update } from '../../src/utils/state';
 // @ts-ignore
 import { getWebviewMock, getWebviewPanelMock } from '../helpers/webviewMock';
 
 describe('process', () => {
   let webviewMock: Webview;
   let webviewPanelMock: WebviewPanel;
-  let cleanupSub: Disposable | null;
+  let cleanupSub: Subscription | null;
   let testScheduler: TestScheduler;
-
+  const configuration = { customTargetDir: none, docsName: none, docsPath: some('./docs'), extensionPath: '', rustStdPath: none };
+  const pageKey = { val: some('index.html'), type: PageKeyType.LocalDoc };
   afterEach(() => {
     if (cleanupSub) {
-      cleanupSub.dispose();
+      cleanupSub.unsubscribe();
       cleanupSub = null;
     }
   });
@@ -33,11 +35,11 @@ describe('process', () => {
 
   it('does not set parsedDoc if missing config', () => {
     testScheduler.run((helpers) => {
-      cleanupSub = processListener(webviewPanelMock);
-      const sliceTest = slice([StateKey.parsedDoc]);
+      const sliceTest = slice([StateKey.configuration, StateKey.pageKey, StateKey.parsedDoc, StateKey.rawDoc]);
+      cleanupSub = processListener({ slice: sliceTest, view: webviewPanelMock });
       const { expectObservable } = helpers;
       const expected = '0';
-      const values = [{ parsedDoc: none }];
+      const values = [{ configuration: none, pageKey, parsedDoc: none, rawDoc: some('<div></div>') }];
 
       update(setBatch([setParsedDoc(none), setRawDoc(some('<div></div>'))]));
       expectObservable(sliceTest).toBe(expected, values);
@@ -46,17 +48,17 @@ describe('process', () => {
 
   it('does not set parsedDoc if missing config docsPath', () => {
     testScheduler.run((helpers) => {
-      cleanupSub = processListener(webviewPanelMock);
-      const sliceTest = slice([StateKey.parsedDoc]);
+      const sliceTest = slice([StateKey.configuration, StateKey.pageKey, StateKey.parsedDoc, StateKey.rawDoc]);
+      cleanupSub = processListener({ slice: sliceTest, view: webviewPanelMock });
       const { expectObservable } = helpers;
       const expected = '0';
-      const values = [{ parsedDoc: none }];
+      const values = [{ configuration: some({ ...configuration, docsPath: none }), pageKey, parsedDoc: none, rawDoc: some('<div></div>') }];
 
       update(
         setBatch([
           setParsedDoc(none),
           setRawDoc(some('<div></div>')),
-          setConfig(some({ customTargetDir: none, docsName: none, docsPath: none, extensionPath: '' })),
+          setConfig(some({ ...configuration, docsPath: none })),
         ])
       );
       expectObservable(sliceTest).toBe(expected, values);
@@ -65,17 +67,17 @@ describe('process', () => {
 
   it('does not set parsedDoc if rawDoc is none', () => {
     testScheduler.run((helpers) => {
-      cleanupSub = processListener(webviewPanelMock);
-      const sliceTest = slice([StateKey.parsedDoc]);
+      const sliceTest = slice([StateKey.configuration, StateKey.pageKey, StateKey.parsedDoc, StateKey.rawDoc]);
+      cleanupSub = processListener({ slice: sliceTest, view: webviewPanelMock });
       const { expectObservable } = helpers;
       const expected = '0';
-      const values = [{ parsedDoc: none }];
+      const values = [{ configuration: some(configuration), pageKey, parsedDoc: none, rawDoc: none }];
 
       update(
         setBatch([
           setParsedDoc(none),
           setRawDoc(none),
-          setConfig(some({ customTargetDir: none, docsName: none, docsPath: some('./'), extensionPath: '' })),
+          setConfig(some(configuration)),
         ])
       );
       expectObservable(sliceTest).toBe(expected, values);
@@ -84,18 +86,18 @@ describe('process', () => {
 
   it('does set parsedDoc if rawDoc, config, docsPath is some', () => {
     testScheduler.run((helpers) => {
-      cleanupSub = processListener(webviewPanelMock);
+      const sliceTest = slice([StateKey.configuration, StateKey.pageKey, StateKey.parsedDoc, StateKey.rawDoc]);
+      cleanupSub = processListener({ slice: sliceTest, view: webviewPanelMock });
       const rawDoc = '<div>Test</div>';
-      const sliceTest = slice([StateKey.parsedDoc]);
       const { expectObservable } = helpers;
       const expected = '0';
-      const values = [{ parsedDoc: some('<!DOCTYPE html><div >Test</div>') }];
+      const values = [{ configuration: some(configuration), pageKey, parsedDoc: some('<!DOCTYPE html><div >Test</div>'), rawDoc: some('<div>Test</div>') }];
 
       update(
         setBatch([
           setParsedDoc(none),
           setRawDoc(some(rawDoc)),
-          setConfig(some({ customTargetDir: none, docsName: none, docsPath: some('./'), extensionPath: '' })),
+          setConfig(some(configuration)),
         ])
       );
       expectObservable(sliceTest).toBe(expected, values);
@@ -104,18 +106,18 @@ describe('process', () => {
 
   it('does set parse links', () => {
     testScheduler.run((helpers) => {
-      cleanupSub = processListener(webviewPanelMock);
+      const sliceTest = slice([StateKey.configuration, StateKey.pageKey, StateKey.parsedDoc, StateKey.rawDoc]);
+      cleanupSub = processListener({ slice: sliceTest, view: webviewPanelMock });
       const rawDoc = '<div><a href="/test-link">testLink</a></div>';
-      const sliceTest = slice([StateKey.parsedDoc]);
       const { expectObservable } = helpers;
       const expected = '0';
-      const values = [{ parsedDoc: some('<!DOCTYPE html><div ><a href="test-link">testLink</a></div>') }];
+      const values = [{ configuration: some(configuration), pageKey, parsedDoc: some('<!DOCTYPE html><div ><a href="docs/test-link">testLink</a></div>'), rawDoc: some('<div><a href="/test-link">testLink</a></div>') }];
 
       update(
         setBatch([
           setParsedDoc(none),
           setRawDoc(some(rawDoc)),
-          setConfig(some({ customTargetDir: none, docsName: none, docsPath: some('./'), extensionPath: '' })),
+          setConfig(some(configuration)),
         ])
       );
       expectObservable(sliceTest).toBe(expected, values);
@@ -124,7 +126,8 @@ describe('process', () => {
 
   it('does handle complex doc', () => {
     testScheduler.run((helpers) => {
-      cleanupSub = processListener(webviewPanelMock);
+      const sliceTest = slice([StateKey.configuration, StateKey.pageKey, StateKey.parsedDoc, StateKey.rawDoc]);
+      cleanupSub = processListener({ slice: sliceTest, view: webviewPanelMock });
       const rawDoc = `<body>
   <div>
     <a href="/test-link">testLink</a>
@@ -133,10 +136,9 @@ describe('process', () => {
     <button disabled id="testBtn">TestBtn</button>
   </div>
 </body>`;
-      const sliceTest = slice([StateKey.parsedDoc]);
       const { expectObservable } = helpers;
       const expected = '0';
-      const values = [{ parsedDoc: some(
+      const values = [{ configuration: some(configuration), pageKey, parsedDoc: some(
         `<!DOCTYPE html><body >
   <div >
     <a href="docs/test-link">testLink</a>
@@ -145,13 +147,13 @@ describe('process', () => {
     <button disabled id="testBtn">TestBtn</button>
   </div>
 <script src=\"out/client/clientHandler.js\"></script><link rel=\"stylesheet\" type=\"text/css\" href=out/client/clientHandlerStyles.css></body>`
-      ) }];
+      ), rawDoc: some(rawDoc) }];
 
       update(
         setBatch([
           setParsedDoc(none),
           setRawDoc(some(rawDoc)),
-          setConfig(some({ customTargetDir: none, docsName: none, docsPath: some('./docs'), extensionPath: '' })),
+          setConfig(some(configuration)),
         ])
       );
       expectObservable(sliceTest).toBe(expected, values);

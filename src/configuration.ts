@@ -1,23 +1,32 @@
 import * as vscode from 'vscode';
+import * as os from 'os';
 import * as path from 'path';
 import * as Queue from './utils/queue';
 import { readdir, readFile } from 'fs/promises';
-import { Option, some, none, Some, isSome } from 'fp-ts/Option';
+import { Option, some, map, none, Some, isSome, fromNullable } from 'fp-ts/Option';
 import { Dirent, existsSync } from 'fs';
 import { parse } from '@iarna/toml';
 import { showError } from './utils/error';
+import { pipe } from 'fp-ts/lib/function';
+import { join } from 'path';
 
 export type Configuration = {
   customTargetDir: Option<string>;
   docsName: Option<string>;
   docsPath: Option<string>;
   extensionPath: string;
+  rustStdPath: Option<string>;
 };
 
 export const defaultConfig = () => ({ customTargetDir: none, docsPath: none });
 
 export const getConfiguration = async (extensionPath: string): Promise<Option<Configuration>> => {
   const workspaces = vscode.workspace.workspaceFolders;
+  const rustStdPath = pipe(
+    fromNullable(vscode.workspace.getConfiguration().get<string | undefined>('rustDocViewer.rustStdPath')),
+    map((docPath) => docPath[0] === '~' ? docPath.replace('~', os.homedir()) : docPath),
+    map((docPath) => join(docPath, 'rust', 'html'))
+  );
   if (workspaces && workspaces.length > 0) {
     let docsPathWs = workspaces[0];
     if (workspaces.length > 1) {
@@ -59,6 +68,7 @@ export const getConfiguration = async (extensionPath: string): Promise<Option<Co
       docsName,
       docsPath,
       extensionPath,
+      rustStdPath,
     });
   }
 
@@ -83,7 +93,6 @@ const getDocsInfo = async (base: vscode.WorkspaceFolder): Promise<Option<{ names
                 data.names.push(crate.package!.name);
               });
             }
-            // TODO: bubble to user
           } catch (e: any) {
             showError(`toml parse error in ${path}, error: ${e.message}`);
             console.log('toml parse error in ', path, 'err:', e);

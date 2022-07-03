@@ -1,5 +1,6 @@
 import { none, Option } from 'fp-ts/Option';
 import { Configuration } from '../configuration';
+import { PageKey } from './state';
 
 export enum ActionType {
   Batch,
@@ -48,7 +49,7 @@ export const setConfig = (configuration: Option<Configuration>): Action<Option<C
   return { actionType: ActionType.SetConfig, payload: configuration };
 };
 
-export const setPageKey = (pageKey: Option<string>): Action<Option<string>> => {
+export const setPageKey = (pageKey: PageKey): Action<PageKey> => {
   return { actionType: ActionType.SetPageKey, payload: pageKey };
 };
 

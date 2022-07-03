@@ -13,7 +13,7 @@ import {
   setReset,
   setUserHistory,
 } from '../../src/utils/actions';
-import { slice, StateKey, update } from '../../src/utils/state';
+import { PageKeyType, slice, StateKey, update } from '../../src/utils/state';
 
 describe('state util', () => {
   describe('slice', () => {
@@ -44,9 +44,10 @@ describe('state util', () => {
         docsName: some('mockDocsName'),
         docsPath: some('mockDocsPath'),
         extensionPath: 'mockExtensionPath',
+        rustStdPath: none
       });
-      const mockError = [Error('mockError')];
-      const mockPageKey = 'mockPageKey';
+      const mockError = ['mockError'];
+      const mockPageKey = { val: some('mockPageKey'), type: PageKeyType.LocalDoc };
       const mockParsedDoc = some('mockParsedDoc');
       const mockRawDoc = some('mockRawDoc');
       const mockUserHistory = [{ docsPath: none, key: none }];
@@ -54,7 +55,7 @@ describe('state util', () => {
         setError(mockError),
         setHistoryCursor(1),
         setConfig(mockConfig),
-        setPageKey(some(mockPageKey)),
+        setPageKey(mockPageKey),
         setRawDoc(mockRawDoc),
         setParsedDoc(mockParsedDoc),
         setUserHistory(mockUserHistory),
@@ -82,8 +83,9 @@ describe('state util', () => {
         docsName: some('mockDocsName'),
         docsPath: some('mockDocsPath'),
         extensionPath: 'mockExtensionPath',
+        rustStdPath: none
       });
-      const mockError = [Error('mockError')];
+      const mockError = ['mockError'];
       const action = setBatch([setError(mockError), setErrorReset(), setConfig(mockConfig), setReset()]);
 
       const resetSub = stateSlice.pipe(skip(1)).subscribe((state) => {

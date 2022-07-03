@@ -1,7 +1,7 @@
 import * as fs from 'fs';
 import * as fsPromises from 'fs/promises';
 import { isSome, none, Some } from 'fp-ts/Option';
-import { WorkspaceFolder } from 'vscode';
+import { WorkspaceConfiguration, WorkspaceFolder } from 'vscode';
 import { Configuration, getConfiguration } from '../src/configuration';
 // @ts-ignore
 import * as mockVscode from '../__mocks__/vscode';
@@ -26,7 +26,7 @@ describe('configuration', () => {
       toJSON: jest.fn(),
       with: jest.fn(),
     },
-    index: 0,
+    index: 0
   };
   const mockCargoDirent = {
     name: 'Cargo.toml',
@@ -44,7 +44,7 @@ describe('configuration', () => {
   it('should return some config with only extension when 1 workspace and no files found', async () => {
     (fsPromises.readdir as any).mockResolvedValue([]);
 
-    mockVscode.workspace.workspaceFolders.push(mockWorkspaceFolder);
+    (mockVscode.workspace as unknown as WorkspaceConfiguration).workspaceFolders.push(mockWorkspaceFolder);
     const result = await getConfiguration(mockExtensionPath);
 
     expect(isSome(result)).toBe(true);
@@ -56,7 +56,7 @@ describe('configuration', () => {
     (fsPromises.readFile as any).mockResolvedValue(mockToml);
     (fs.existsSync as any).mockReturnValue(true);
 
-    mockVscode.workspace.workspaceFolders.push(mockWorkspaceFolder);
+    (mockVscode.workspace as unknown as WorkspaceConfiguration).workspaceFolders.push(mockWorkspaceFolder);
     const result = await getConfiguration(mockExtensionPath);
 
     expect(isSome(result)).toBe(true);
@@ -77,8 +77,8 @@ describe('configuration', () => {
     (fs.existsSync as any).mockReturnValue(true);
     mockVscode.window.showQuickPick.mockResolvedValue(mockWorkspaceFolder.name);
 
-    mockVscode.workspace.workspaceFolders.push(throwawayWsFolder);
-    mockVscode.workspace.workspaceFolders.push(mockWorkspaceFolder);
+    (mockVscode.workspace as unknown as WorkspaceConfiguration).workspaceFolders.push(throwawayWsFolder);
+    (mockVscode.workspace as unknown as WorkspaceConfiguration).workspaceFolders.push(mockWorkspaceFolder);
     const result = await getConfiguration(mockExtensionPath);
 
     expect(isSome(result)).toBe(true);
@@ -100,7 +100,7 @@ describe('configuration', () => {
     (fs.existsSync as any).mockReturnValueOnce(false).mockReturnValueOnce(true);
     mockVscode.window.showQuickPick.mockResolvedValue(mockWorkspaceFolder.name);
 
-    mockVscode.workspace.workspaceFolders.push(mockWorkspaceFolder);
+    (mockVscode.workspace as unknown as WorkspaceConfiguration).workspaceFolders.push(mockWorkspaceFolder);
     const result = await getConfiguration(mockExtensionPath);
 
     expect(isSome(result)).toBe(true);

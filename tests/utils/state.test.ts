@@ -44,7 +44,7 @@ describe('state util', () => {
         docsName: some('mockDocsName'),
         docsPath: some('mockDocsPath'),
         extensionPath: 'mockExtensionPath',
-        rustStdPath: none
+        rustShareDocPath: none
       });
       const mockError = ['mockError'];
       const mockPageKey = { val: some('mockPageKey'), type: PageKeyType.LocalDoc };
@@ -83,7 +83,7 @@ describe('state util', () => {
         docsName: some('mockDocsName'),
         docsPath: some('mockDocsPath'),
         extensionPath: 'mockExtensionPath',
-        rustStdPath: none
+        rustShareDocPath: none
       });
       const mockError = ['mockError'];
       const action = setBatch([setError(mockError), setErrorReset(), setConfig(mockConfig), setReset()]);

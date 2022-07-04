@@ -13,7 +13,7 @@ describe('process', () => {
   let webviewPanelMock: WebviewPanel;
   let cleanupSub: Subscription | null;
   let testScheduler: TestScheduler;
-  const configuration = { customTargetDir: none, docsName: none, docsPath: some('./docs'), extensionPath: '', rustStdPath: none };
+  const configuration = { customTargetDir: none, docsName: none, docsPath: some('./docs'), extensionPath: '', rustShareDocPath: none };
   const pageKey = { val: some('index.html'), type: PageKeyType.LocalDoc };
   afterEach(() => {
     if (cleanupSub) {

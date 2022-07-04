@@ -26,7 +26,7 @@ export function activate(context: vscode.ExtensionContext) {
       };
       pipe(
         initConfig,
-        map((cfg) => cfg.rustStdPath),
+        map((cfg) => cfg.rustShareDocPath),
         flatten,
         map((path) => {
           webViewOptions.localResourceRoots.push(vscode.Uri.file(join(path, '../../')));

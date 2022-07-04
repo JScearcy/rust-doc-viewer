@@ -1,6 +1,6 @@
-import { alt, fromNullable, isSome, none, Option, some } from 'fp-ts/Option';
+import { alt, fromNullable, isSome, map, none, Option, some } from 'fp-ts/Option';
 import { pipe } from 'fp-ts/function';
-import { sep } from 'path';
+import { basename, join, sep } from 'path';
 import { combineLatest, distinctUntilChanged, Observable } from 'rxjs';
 import { env, Disposable, Memento, Uri, WebviewPanel } from 'vscode';
 import { Command, CommandKey } from '../client/command';
@@ -33,12 +33,19 @@ export const postMessageListener = ({ slice, view, workspaceState }: PostMessage
         case CommandKey.newPage: {
           if (isExternal(payload.path)) {
             const externalUri = Uri.parse(payload.path);
-            if(isSome(configuration) && isSome(configuration.value.rustStdPath)) {
+            if(isSome(configuration) && isSome(configuration.value.rustShareDocPath)) {
               const docKeyMatch = externalUri.path.match(docPathRegex);
               if(docKeyMatch) {
-                const docsPath = configuration.value.rustStdPath;
+                const docMatch = docKeyMatch[1];
+                const fileName = basename(docKeyMatch[1]);
+                const filePath = docMatch.replace(fileName, '');
+                const docsPath = pipe(
+                  configuration.value.rustShareDocPath,
+                  map((rustPath) => join(rustPath, filePath)
+                )
+                );
                 const newConfig = { ...configuration.value, docsPath };
-                const key = fromNullable(docKeyMatch[1]);
+                const key = fromNullable(fileName);
                 update(setBatch([setConfig(some(newConfig)), setPageKey({ val: key, type: PageKeyType.StdDoc }), setUserHistory([{ docsPath, key }])]));
                 break;
               }

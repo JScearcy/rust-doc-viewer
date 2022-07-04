@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
+## [3.0.2] - 2022-07-04
+
+- Add rustShareDocPath configuration to open local docs when provided
+
+## [3.0.1] - 2022-07-02
+
+- Open online docs for docs not included in local build (std or core for example)
+
 ## [3.0.0] - 2022-06-28
 
 - Improve performance

@@ -16,7 +16,7 @@
     "color": "#0e95b7",
     "theme": "dark"
   },
-  "version": "3.0.1",
+  "version": "3.0.2",
   "engines": {
     "vscode": "^1.45.0"
   },
@@ -29,6 +29,15 @@
   ],
   "main": "./out/extension.js",
   "contributes": {
+    "configuration": {
+      "title": "Rust doc viewer",
+      "properties": {
+        "rustDocViewer.rustShareDocPath": {
+          "type": "string",
+          "markdownDescription": "Root path to docs (std/core) - installed by rustup, or otherwise built. Example: `~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/share/doc`"
+        }
+      }
+    },
     "commands": [
       {
         "command": "extension.rustDocViewer",

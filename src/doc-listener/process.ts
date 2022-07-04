@@ -1,8 +1,8 @@
 import { isNone, isSome, some } from 'fp-ts/Option';
-import { PageKeyType, State, StateKey, update } from '../utils/state';
+import { State, StateKey, update } from '../utils/state';
 import * as htmlparser2 from 'htmlparser2';
 import { Uri, WebviewPanel } from 'vscode';
-import { basename, join } from 'path';
+import { join } from 'path';
 import { setError, setParsedDoc } from '../utils/actions';
 import { isExternal } from '../utils';
 import { ListenerOpts } from './listener';
@@ -13,17 +13,8 @@ const selfClosing = ['br', 'img', 'input', 'link', 'meta'];
 let buf = '';
 const resetBuf = () => (buf = '<!DOCTYPE html>');
 
-const pathFromRelative = (relPath: string, srcPath: string, externalPackagePage: boolean): Uri => {
+const pathFromRelative = (relPath: string, srcPath: string): Uri => {
   const newPath = join(srcPath, relPath);
-
-  if (externalPackagePage) {
-    const fileName = basename(relPath);
-    const navigation = relPath.replace(fileName, '');
-    const candidate = join(srcPath, navigation);
-    if (candidate.length <= srcPath.length) {
-      return Uri.file(join(srcPath, fileName));
-    }
-  }
 
   return Uri.file(newPath);
 };
@@ -33,7 +24,7 @@ const rustDocVarAttributes = {
   dataSearch: 'data-search-js',
   dataSearchIndex: 'data-search-index-js',
 } as const;
-const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string, externalPackagePage: boolean) =>
+const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string) =>
   new htmlparser2.Parser({
     onopentag(name, attributes) {
       // search depends on a div containing path for search js, and base uri's
@@ -45,14 +36,14 @@ const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string, e
         ];
         keys.forEach((key) => {
           if (attributes[key]) {
-            const path = pathFromRelative(attributes[key], srcPath, externalPackagePage);
+            const path = pathFromRelative(attributes[key], srcPath);
             attributes[key] = view.webview.asWebviewUri(path).toString(true);
           }
         });
       } else if (transformTags.includes(name)) {
         const uriAttr = attributes['src'] ? 'src' : 'href';
         if (attributes[uriAttr] && !isExternal(attributes[uriAttr])) {
-          const uri = view.webview.asWebviewUri(pathFromRelative(attributes[uriAttr], srcPath, externalPackagePage));
+          const uri = view.webview.asWebviewUri(pathFromRelative(attributes[uriAttr], srcPath));
           attributes[uriAttr] = uri.toString(true);
         }
       }
@@ -101,8 +92,7 @@ export const processListener = ({ slice, view }: ProcessListenerOpts) =>
   slice.subscribe(({ configuration, pageKey, parsedDoc, rawDoc }) => {
     if (isNone(parsedDoc) && isSome(rawDoc) && isSome(configuration) && isSome(configuration.value.docsPath)) {
       resetBuf();
-      const externalPackagePage = pageKey.type === PageKeyType.StdDoc;
-      const parser = getParser(view, configuration.value.docsPath.value, configuration.value.extensionPath, externalPackagePage);
+      const parser = getParser(view, configuration.value.docsPath.value, configuration.value.extensionPath);
       parser.write(rawDoc.value);
       parser.end();
       update(setParsedDoc(some(buf)));

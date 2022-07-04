@@ -46,7 +46,7 @@ describe('configuration listener', () => {
         docsName: none,
         docsPath: some('test/target'),
         extensionPath: '',
-        rustStdPath: none
+        rustShareDocPath: none
       };
       const sliceTest = slice([StateKey.configuration, StateKey.pageKey]);
       const sliceReplace = sliceTest.pipe(tap(() => eventCount++), shareReplay(2));

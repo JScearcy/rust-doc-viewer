@@ -15,15 +15,15 @@ export type Configuration = {
   docsName: Option<string>;
   docsPath: Option<string>;
   extensionPath: string;
-  rustStdPath: Option<string>;
+  rustShareDocPath: Option<string>;
 };
 
 export const defaultConfig = () => ({ customTargetDir: none, docsPath: none });
 
 export const getConfiguration = async (extensionPath: string): Promise<Option<Configuration>> => {
   const workspaces = vscode.workspace.workspaceFolders;
-  const rustStdPath = pipe(
-    fromNullable(vscode.workspace.getConfiguration().get<string | undefined>('rustDocViewer.rustStdPath')),
+  const rustShareDocPath = pipe(
+    fromNullable(vscode.workspace.getConfiguration().get<string | undefined>('rustDocViewer.rustShareDocPath')),
     map((docPath) => docPath[0] === '~' ? docPath.replace('~', os.homedir()) : docPath),
     map((docPath) => join(docPath, 'rust', 'html'))
   );
@@ -68,7 +68,7 @@ export const getConfiguration = async (extensionPath: string): Promise<Option<Co
       docsName,
       docsPath,
       extensionPath,
-      rustStdPath,
+      rustShareDocPath,
     });
   }
 

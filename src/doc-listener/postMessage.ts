@@ -33,20 +33,25 @@ export const postMessageListener = ({ slice, view, workspaceState }: PostMessage
         case CommandKey.newPage: {
           if (isExternal(payload.path)) {
             const externalUri = Uri.parse(payload.path);
-            if(isSome(configuration) && isSome(configuration.value.rustShareDocPath)) {
+            if (isSome(configuration) && isSome(configuration.value.rustShareDocPath)) {
               const docKeyMatch = externalUri.path.match(docPathRegex);
-              if(docKeyMatch) {
+              if (docKeyMatch) {
                 const docMatch = docKeyMatch[1];
                 const fileName = basename(docKeyMatch[1]);
                 const filePath = docMatch.replace(fileName, '');
                 const docsPath = pipe(
                   configuration.value.rustShareDocPath,
-                  map((rustPath) => join(rustPath, filePath)
-                )
+                  map((rustPath) => join(rustPath, filePath))
                 );
                 const newConfig = { ...configuration.value, docsPath };
                 const key = fromNullable(fileName);
-                update(setBatch([setConfig(some(newConfig)), setPageKey({ val: key, type: PageKeyType.StdDoc }), setUserHistory([{ docsPath, key }])]));
+                update(
+                  setBatch([
+                    setConfig(some(newConfig)),
+                    setPageKey({ val: key, type: PageKeyType.StdDoc }),
+                    setUserHistory([{ docsPath, key }]),
+                  ])
+                );
                 break;
               }
             }
@@ -58,7 +63,13 @@ export const postMessageListener = ({ slice, view, workspaceState }: PostMessage
               alt(() => configuration.value.docsPath)
             );
             const newConfig = { ...configuration.value, docsPath };
-            update(setBatch([setConfig(some(newConfig)), setPageKey({ val: key, type: PageKeyType.LocalDoc }), setUserHistory([{ docsPath, key }])]));
+            update(
+              setBatch([
+                setConfig(some(newConfig)),
+                setPageKey({ val: key, type: PageKeyType.LocalDoc }),
+                setUserHistory([{ docsPath, key }]),
+              ])
+            );
           }
           break;
         }
@@ -102,12 +113,17 @@ export const postMessageListener = ({ slice, view, workspaceState }: PostMessage
 };
 
 const getNewPathData = (path: string): Option<string>[] => {
-  const pieces = new URL(path).pathname.split(sep);
+  const pieces = new URL(path).pathname.split('/');
   const key = pieces.splice(-1).join(sep);
-  const configPathCandidate = pieces.join(sep);
+  const configPathCandidate = pieces.filter((piece) => piece.length > 0).join(sep);
   // TODO: use async exists
-  if (!existsSync(configPathCandidate)) {
-    return [none, some(key)];
+  // handling base path case for *nix environment
+  if (existsSync(`${sep}${configPathCandidate}`)) {
+    return [some(`${sep}${configPathCandidate}`), some(key)];
   }
-  return [some(configPathCandidate), some(key)];
+  // handling base path case for relative + Windows environment
+  if (existsSync(configPathCandidate)) {
+    return [some(configPathCandidate), some(key)];
+  }
+  return [none, some(key)];
 };

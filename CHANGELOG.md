@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
+## [3.0.3] - 2022-08-14
+
+- Fix Windows path resolution to prevent full path file name
+- Handle *nix and Windows path when navigating to different packages within docs
+
 ## [3.0.2] - 2022-07-04
 
 - Add rustShareDocPath configuration to open local docs when provided

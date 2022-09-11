@@ -19,6 +19,15 @@ const pathFromRelative = (relPath: string, srcPath: string): Uri => {
   return Uri.file(newPath);
 };
 
+const escapeHtml = (unsafe: string) => {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
 const rustDocVarAttributes = {
   dataRootPath: 'data-root-path',
   dataSearch: 'data-search-js',
@@ -48,19 +57,19 @@ const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string) =
         }
       }
 
-      const serializedAttrs = Object.keys(attributes).reduce((attrs, attrName) => {
-        if (attributes[attrName]) {
-          return [...attrs, `${attrName}="${attributes[attrName]}"`];
+      const serializedAttrs = Object.entries(attributes).reduce((attrs, [attrName, attrVal]) => {
+        if (attrVal) {
+          return [...attrs, `${attrName}="${attrVal}"`];
         } else {
           return [...attrs, attrName];
         }
       }, [] as string[]);
-
-      buf = `${buf}<${name} ${serializedAttrs.join(' ')}>`;
+      const newTag = serializedAttrs.length > 0 ? `<${name} ${serializedAttrs.join(' ')}>` : `<${name}>`;
+      buf = `${buf}${newTag}`;
     },
 
     ontext(text) {
-      buf = `${buf}${text}`;
+      buf = `${buf}${escapeHtml(text)}`;
     },
 
     onclosetag(name) {
@@ -84,7 +93,9 @@ const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string) =
     },
   });
 
-type ProcessListenerOpts = ListenerOpts<Pick<State, StateKey.configuration | StateKey.pageKey | StateKey.parsedDoc | StateKey.rawDoc>> & {
+type ProcessListenerOpts = ListenerOpts<
+  Pick<State, StateKey.configuration | StateKey.pageKey | StateKey.parsedDoc | StateKey.rawDoc>
+> & {
   view: WebviewPanel;
 };
 

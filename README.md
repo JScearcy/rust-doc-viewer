@@ -22,3 +22,5 @@ Open your rust docs and view them in another tab in VS Code
     2.) Requires documentation to be in the standard output from `cargo docs` 
 
     3.) Testing and build automation
+
+    4.) Unit tests are dependent on OS (currently Windows)

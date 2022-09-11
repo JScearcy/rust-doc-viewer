@@ -91,7 +91,7 @@ describe('process', () => {
       const rawDoc = '<div>Test</div>';
       const { expectObservable } = helpers;
       const expected = '0';
-      const values = [{ configuration: some(configuration), pageKey, parsedDoc: some('<!DOCTYPE html><div >Test</div>'), rawDoc: some('<div>Test</div>') }];
+      const values = [{ configuration: some(configuration), pageKey, parsedDoc: some('<!DOCTYPE html><div>Test</div>'), rawDoc: some('<div>Test</div>') }];
 
       update(
         setBatch([
@@ -111,7 +111,7 @@ describe('process', () => {
       const rawDoc = '<div><a href="/test-link">testLink</a></div>';
       const { expectObservable } = helpers;
       const expected = '0';
-      const values = [{ configuration: some(configuration), pageKey, parsedDoc: some('<!DOCTYPE html><div ><a href="docs/test-link">testLink</a></div>'), rawDoc: some('<div><a href="/test-link">testLink</a></div>') }];
+      const values = [{ configuration: some(configuration), pageKey, parsedDoc: some('<!DOCTYPE html><div><a href=\"docs\\test-link\">testLink</a></div>'), rawDoc: some('<div><a href="/test-link">testLink</a></div>') }];
 
       update(
         setBatch([
@@ -139,14 +139,14 @@ describe('process', () => {
       const { expectObservable } = helpers;
       const expected = '0';
       const values = [{ configuration: some(configuration), pageKey, parsedDoc: some(
-        `<!DOCTYPE html><body >
-  <div >
-    <a href="docs/test-link">testLink</a>
-    <script src="docs/test-script"></script>
-    <div id="rustdoc-vars" data-root-path="docs/root" data-search-js="docs/search-js" data-search-index-js="docs/search-index-js"></div>
+        `<!DOCTYPE html><body>
+  <div>
+    <a href=\"docs\\test-link\">testLink</a>
+    <script src=\"docs\\test-script\"></script>
+    <div id=\"rustdoc-vars\" data-root-path=\"docs\\root\" data-search-js=\"docs\\search-js\" data-search-index-js=\"docs\\search-index-js\"></div>
     <button disabled id="testBtn">TestBtn</button>
   </div>
-<script src=\"out/client/clientHandler.js\"></script><link rel=\"stylesheet\" type=\"text/css\" href=out/client/clientHandlerStyles.css></body>`
+<script src=\"out\\client\\clientHandler.js\"></script><link rel=\"stylesheet\" type=\"text/css\" href=out\\client\\clientHandlerStyles.css></body>`
       ), rawDoc: some(rawDoc) }];
 
       update(

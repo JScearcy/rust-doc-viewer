@@ -76,21 +76,23 @@ export const postMessageListener = ({ slice, view, workspaceState }: PostMessage
         case CommandKey.setState: {
           if (payload) {
             const currState = JSON.parse(workspaceState.get('rustDocViewer', '{}'));
+            const newState = {
+              ...currState,
+              ...payload,
+            };
             workspaceState.update(
               'rustDocViewer',
-              JSON.stringify({
-                ...currState,
-                ...payload,
-              })
+              JSON.stringify(newState)
             );
           }
           break;
         }
         case CommandKey.getState: {
-          let state: string = workspaceState.get('rustDocViewer', '{}');
+          let stateRaw: string = workspaceState.get('rustDocViewer', '{}');
+          let state = JSON.parse(stateRaw);
           view.webview.postMessage({
             commandType: CommandKey.getState.toString(),
-            payload: state,
+            payload: JSON.stringify(state),
           });
           break;
         }

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
+## [4.0.0] - 2023-07-09
+
+- Fix storage load order issue, allowing VSCode stored settings to intercept storage calls
+- Fix base path, allowing dynamic load introduced by `cargo doc` changes
+- Persist settings, and sync on render
+
 ## [3.0.3] - 2022-08-14
 
 - Fix Windows path resolution to prevent full path file name

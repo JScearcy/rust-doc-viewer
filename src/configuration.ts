@@ -77,8 +77,10 @@ export const getConfiguration = async (extensionPath: string): Promise<Option<Co
 
 // only a (very) partial impl of a valid Cargo.toml, expand if needed
 type CrateType = {
-  workspace?: { members: string[] }[];
+  bin?: { name: string };
+  lib?: { name: string };
   package?: { name: string };
+  workspace?: { members: string[] }[];
 };
 const getDocsInfo = async (base: vscode.WorkspaceFolder): Promise<Option<{ names: string[]; docsPaths: string[] }>> => {
   const docsInfo = await bfsDir(base.uri.fsPath, (dir) => dir.name === 'Cargo.toml' || dir.name === 'doc').then(
@@ -88,6 +90,18 @@ const getDocsInfo = async (base: vscode.WorkspaceFolder): Promise<Option<{ names
           try {
             const fileData = await readFile(path, 'utf-8');
             const crate: CrateType = parse(fileData);
+            if (crate.bin?.name) {
+              acc.then((data) => {
+                data.names.push(crate.bin!.name);
+              });
+            }
+
+            if (crate.lib?.name) {
+              acc.then((data) => {
+                data.names.push(crate.lib!.name);
+              });
+            }
+
             if (crate.package?.name) {
               acc.then((data) => {
                 data.names.push(crate.package!.name);

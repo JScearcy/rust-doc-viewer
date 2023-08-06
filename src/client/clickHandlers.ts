@@ -3,8 +3,16 @@ import { CommandKey } from './command';
 const bubbleTargets = ['SUMMARY'];
 
 export const eventShouldBubble = (element: Element) => {
-  return bubbleTargets.includes(element.tagName);
+  const inSettings = !!element.closest(".settings");
+  return inSettings || bubbleTargets.includes(element.tagName);
 };
+
+// settings-menu button opens modal, no need to load a new file from this button
+export const eventHandled = (element: Element) => {
+  const inSettings = element.id === 'settings-menu' || !!element.closest("#settings-menu");
+  return inSettings;
+};
+
 
 export const navigateClickHandler = (element: HTMLElement) => {
   const el = getElementToHandle(element);

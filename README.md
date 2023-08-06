@@ -2,6 +2,8 @@
 
 This extension will take your locally generated project docs and display them in a new window for easier reference.
 
+Version 4.0.0 may break any documentation generated using older cargo-doc implementations - tested on 1.72.0 toolchain
+
 ## Use
 
 * Create the documentation using `cargo doc` inside of your project folder

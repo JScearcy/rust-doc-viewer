@@ -1,7 +1,7 @@
 import { isNone, isSome, some } from 'fp-ts/Option';
 import { State, StateKey, update } from '../utils/state';
 import * as htmlparser2 from 'htmlparser2';
-import { Uri, WebviewPanel } from 'vscode';
+import { Memento, Uri, WebviewPanel } from 'vscode';
 import { join } from 'path';
 import { setError, setParsedDoc } from '../utils/actions';
 import { isExternal } from '../utils';
@@ -32,16 +32,41 @@ const rustDocVarAttributes = {
   dataRootPath: 'data-root-path',
   dataSearch: 'data-search-js',
   dataSearchIndex: 'data-search-index-js',
+  dataSettingsCss: `data-settings-css`,
+  dataSettingsJs: 'data-settings-js',
+  dataStaticRootPath: 'data-static-root-path',
 } as const;
-const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string) =>
+const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string, workspaceState: Memento) =>
   new htmlparser2.Parser({
     onopentag(name, attributes) {
-      // search depends on a div containing path for search js, and base uri's
-      if (name === 'div' && attributes['id'] === 'rustdoc-vars') {
+
+      if (name === 'head') {
+        const localScriptUri = view.webview.asWebviewUri(
+          Uri.file(join(extensionPath, 'out', 'client', 'clientHandler.js'))
+        );
+        const historyStylesUri = view.webview.asWebviewUri(
+          Uri.file(join(extensionPath, 'out', 'client', 'clientHandlerStyles.css'))
+        );
+        buf = [
+          `${buf}<${name}>`,
+          `<base href="${view.webview.asWebviewUri(Uri.file(join(srcPath, 'doc')))}" />`,
+          `<script src="${localScriptUri.toString(true)}"></script>`,
+          `<link rel="stylesheet" type="text/css" href=${historyStylesUri}>`
+        ].join('');
+
+      } else if (name === 'body') {
+        let stateRaw: string = workspaceState.get('rustDocViewer', '{}');
+        buf = [
+          `${buf}<${name}>`,
+          `<div id="doc-viewer-state" data-state=${stateRaw}></div>`,
+        ].join('');
+        // search depends on a div containing path for search js, and base uri's
+      } else if (name === 'div' && attributes['id'] === 'rustdoc-vars') {
         const keys = [
           rustDocVarAttributes.dataRootPath,
           rustDocVarAttributes.dataSearch,
           rustDocVarAttributes.dataSearchIndex,
+          rustDocVarAttributes.dataStaticRootPath,
         ];
         keys.forEach((key) => {
           if (attributes[key]) {
@@ -51,7 +76,7 @@ const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string) =
         });
       } else if (transformTags.includes(name)) {
         const uriAttr = attributes['src'] ? 'src' : 'href';
-        if (attributes[uriAttr] && !isExternal(attributes[uriAttr])) {
+        if (attributes[uriAttr] && !isExternal(attributes[uriAttr]) && !attributes[uriAttr].includes('javascript:void')) {
           const uri = view.webview.asWebviewUri(pathFromRelative(attributes[uriAttr], srcPath));
           attributes[uriAttr] = uri.toString(true);
         }
@@ -73,17 +98,7 @@ const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string) =
     },
 
     onclosetag(name) {
-      if (name === 'body') {
-        const localScriptUri = view.webview.asWebviewUri(
-          Uri.file(join(extensionPath, 'out', 'client', 'clientHandler.js'))
-        );
-        const historyStylesUri = view.webview.asWebviewUri(
-          Uri.file(join(extensionPath, 'out', 'client', 'clientHandlerStyles.css'))
-        );
-        buf = `${buf}<script src="${localScriptUri.toString(
-          true
-        )}"></script><link rel="stylesheet" type="text/css" href=${historyStylesUri}></${name}>`;
-      } else if (!selfClosing.includes(name)) {
+      if (!selfClosing.includes(name)) {
         buf = `${buf}</${name}>`;
       }
     },
@@ -97,13 +112,14 @@ type ProcessListenerOpts = ListenerOpts<
   Pick<State, StateKey.configuration | StateKey.pageKey | StateKey.parsedDoc | StateKey.rawDoc>
 > & {
   view: WebviewPanel;
+  workspaceState: Memento;
 };
 
-export const processListener = ({ slice, view }: ProcessListenerOpts) =>
+export const processListener = ({ slice, view, workspaceState }: ProcessListenerOpts) =>
   slice.subscribe(({ configuration, pageKey, parsedDoc, rawDoc }) => {
     if (isNone(parsedDoc) && isSome(rawDoc) && isSome(configuration) && isSome(configuration.value.docsPath)) {
       resetBuf();
-      const parser = getParser(view, configuration.value.docsPath.value, configuration.value.extensionPath);
+      const parser = getParser(view, configuration.value.docsPath.value, configuration.value.extensionPath, workspaceState);
       parser.write(rawDoc.value);
       parser.end();
       update(setParsedDoc(some(buf)));

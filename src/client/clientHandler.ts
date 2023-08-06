@@ -1,8 +1,8 @@
-import { Command, CommandKey } from './command';
+import { CommandKey } from './command';
 import * as CookieShim from './cookieShim';
 import { navigatePanel } from './navigation';
 import { WebviewApi } from 'vscode-webview';
-import { eventShouldBubble, navigateClickHandler } from './clickHandlers';
+import { eventHandled, eventShouldBubble, navigateClickHandler } from './clickHandlers';
 
 declare var acquireVsCodeApi: () => WebviewApi<any>;
 
@@ -10,24 +10,18 @@ const vscode = acquireVsCodeApi();
 
 (function (vscode: any, window: any) {
   CookieShim.initCookieShim(vscode);
-  window.addEventListener('message', (e: MessageEvent<Command>) => {
-    const message = e.data;
-    if (message.commandType === CommandKey.getState.toString()) {
-      const state = JSON.parse(message.payload);
-      CookieShim.set(state);
-      CookieShim.switchThemeHelper();
-    } else {
-      console.log('unknown Command: ', message);
-    }
-  });
 
   document.addEventListener('click', (e) => {
     if (eventShouldBubble(e.target as Element)) {
       return;
     }
 
+    
     e.preventDefault();
     e.stopPropagation();
+    if (eventHandled(e.target as Element)) {
+      return false;
+    }
     const element = e.target as HTMLElement;
     const message = navigateClickHandler(element);
     if (message?.commandType === CommandKey.navigateAnchor) {
@@ -51,4 +45,18 @@ const vscode = acquireVsCodeApi();
   });
 
   navigatePanel(vscode);
+
+  // once DOMContentLoaded set saved state and dispatch `pageshow` event in order to trigger theme sync
+  const contentLoaded = () => {
+    const stateEl = document.getElementById('doc-viewer-state');
+    if (stateEl) {
+      const data = stateEl.getAttribute('data-state') || '{}';
+      vscode.setState(JSON.parse(data));
+      const event = new PageTransitionEvent("pageshow", { persisted: true });
+      window.dispatchEvent(event);
+    }
+    document.removeEventListener('DOMContentLoaded', contentLoaded);
+  };
+
+  document.addEventListener('DOMContentLoaded', contentLoaded);
 })(vscode, window);

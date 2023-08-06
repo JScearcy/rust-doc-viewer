@@ -56,6 +56,7 @@ export function activate(context: vscode.ExtensionContext) {
         processListener({
           slice: slice([StateKey.configuration, StateKey.pageKey, StateKey.parsedDoc, StateKey.rawDoc]),
           view: viewRef.value,
+          workspaceState: context.workspaceState,
         })
       );
       subscriptions.add(renderListener({ slice: slice([StateKey.parsedDoc]), view: viewRef.value }));

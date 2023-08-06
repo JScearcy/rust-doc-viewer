@@ -35,7 +35,7 @@ describe('load util', () => {
 
     const expectedUpdate = setError([mockError.message]);
 
-    expect(mockReadFile).toBeCalledWith(join(mockPath), 'utf-8');
+    expect(mockReadFile).toBeCalledWith(join(mockPath, 'index.html'), 'utf-8');
     expect(state.update).toBeCalledWith(expectedUpdate);
   });
 });

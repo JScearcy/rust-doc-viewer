@@ -1,4 +1,5 @@
-import { Uri, ViewColumn, Webview } from "vscode";
+import { string } from "fp-ts";
+import { Memento, Uri, ViewColumn, Webview } from "vscode";
 
 export const getWebviewMock = () => ({
   options: {},
@@ -28,3 +29,10 @@ export const getWebviewPanelMock = (webview: Webview) => ({
     throw new Error('Function not implemented.');
   },
 });
+
+export const getWorkspaceStateMock = (getMock?: <T>(key: string) => T | undefined): Memento => {
+  const defaultGet = <T>(key: string, defaultVal: T): T => defaultVal;
+  const get: Memento['get'] = getMock || defaultGet as any;
+  const update: Memento['update'] = () => Promise.resolve();
+  return { get, update };
+}

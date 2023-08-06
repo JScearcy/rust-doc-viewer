@@ -49,27 +49,27 @@ const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string, w
         );
         buf = [
           `${buf}<${name}>`,
-          `<base href="${view.webview.asWebviewUri(Uri.file(join(srcPath, 'doc')))}" />`,
           `<script src="${localScriptUri.toString(true)}"></script>`,
           `<link rel="stylesheet" type="text/css" href=${historyStylesUri}>`
         ].join('');
 
       } else if (name === 'body') {
         let stateRaw: string = workspaceState.get('rustDocViewer', '{}');
-        buf = [
+        buf = [   
           `${buf}<${name}>`,
           `<div id="doc-viewer-state" data-state=${stateRaw}></div>`,
         ].join('');
         // search depends on a div containing path for search js, and base uri's
       } else if (name === 'div' && attributes['id'] === 'rustdoc-vars') {
+        const hasRootPath = Boolean(attributes[rustDocVarAttributes.dataStaticRootPath]);
         const keys = [
           rustDocVarAttributes.dataRootPath,
-          rustDocVarAttributes.dataSearch,
+          hasRootPath ? false : rustDocVarAttributes.dataSearch,
           rustDocVarAttributes.dataSearchIndex,
           rustDocVarAttributes.dataStaticRootPath,
-        ];
+        ].filter(x => x);
         keys.forEach((key) => {
-          if (attributes[key]) {
+          if (typeof key === 'string' && attributes[key]) {
             const path = pathFromRelative(attributes[key], srcPath);
             attributes[key] = view.webview.asWebviewUri(path).toString(true);
           }

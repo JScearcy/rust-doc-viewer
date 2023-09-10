@@ -16,7 +16,7 @@
     "color": "#0e95b7",
     "theme": "dark"
   },
-  "version": "4.0.0",
+  "version": "4.0.1",
   "engines": {
     "vscode": "^1.45.0"
   },

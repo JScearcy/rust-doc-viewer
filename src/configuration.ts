@@ -24,7 +24,7 @@ export const getConfiguration = async (extensionPath: string): Promise<Option<Co
   const workspaces = vscode.workspace.workspaceFolders;
   const rustShareDocPath = pipe(
     fromNullable(vscode.workspace.getConfiguration().get<string | undefined>('rustDocViewer.rustShareDocPath')),
-    map((docPath) => docPath[0] === '~' ? docPath.replace('~', os.homedir()) : docPath),
+    map((docPath) => (docPath[0] === '~' ? docPath.replace('~', os.homedir()) : docPath)),
     map((docPath) => join(docPath, 'rust', 'html'))
   );
   if (workspaces && workspaces.length > 0) {
@@ -109,7 +109,6 @@ const getDocsInfo = async (base: vscode.WorkspaceFolder): Promise<Option<{ names
             }
           } catch (e: any) {
             showError(`toml parse error in ${path}, error: ${e.message}`);
-            console.log('toml parse error in ', path, 'err:', e);
           }
         } else {
           acc.then((data) => {

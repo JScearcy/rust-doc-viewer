@@ -1,5 +1,5 @@
-import { Observable } from "rxjs";
+import { Observable } from 'rxjs';
 
 type ListenerOpts<T> = {
-  slice: Observable<T>
+  slice: Observable<T>;
 };

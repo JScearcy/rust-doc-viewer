@@ -26,7 +26,7 @@ const escapeHtml = (unsafe: string) => {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;');
-}
+};
 
 const rustDocVarAttributes = {
   dataRootPath: 'data-root-path',
@@ -39,7 +39,6 @@ const rustDocVarAttributes = {
 const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string, workspaceState: Memento) =>
   new htmlparser2.Parser({
     onopentag(name, attributes) {
-
       if (name === 'head') {
         const localScriptUri = view.webview.asWebviewUri(
           Uri.file(join(extensionPath, 'out', 'client', 'clientHandler.js'))
@@ -50,24 +49,23 @@ const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string, w
         buf = [
           `${buf}<${name}>`,
           `<script src="${localScriptUri.toString(true)}"></script>`,
-          `<link rel="stylesheet" type="text/css" href=${historyStylesUri}>`
+          `<link rel="stylesheet" type="text/css" href=${historyStylesUri}>`,
         ].join('');
-
       } else if (name === 'body') {
         let stateRaw: string = workspaceState.get('rustDocViewer', '{}');
-        buf = [   
-          `${buf}<${name}>`,
-          `<div id="doc-viewer-state" data-state=${stateRaw}></div>`,
-        ].join('');
+        buf = [`${buf}<${name}>`, `<div id="doc-viewer-state" data-state=${stateRaw}></div>`].join('');
         // search depends on a div containing path for search js, and base uri's
-      } else if (name === 'div' && attributes['id'] === 'rustdoc-vars') {
+      } else if (
+        (name === 'div' && attributes['id'] === 'rustdoc-vars') ||
+        (name === 'meta' && attributes['name'] === 'rustdoc-vars')
+      ) {
         const hasRootPath = Boolean(attributes[rustDocVarAttributes.dataStaticRootPath]);
         const keys = [
           rustDocVarAttributes.dataRootPath,
           hasRootPath ? false : rustDocVarAttributes.dataSearch,
           rustDocVarAttributes.dataSearchIndex,
           rustDocVarAttributes.dataStaticRootPath,
-        ].filter(x => x);
+        ].filter((x) => x);
         keys.forEach((key) => {
           if (typeof key === 'string' && attributes[key]) {
             const path = pathFromRelative(attributes[key], srcPath);
@@ -76,7 +74,11 @@ const getParser = (view: WebviewPanel, srcPath: string, extensionPath: string, w
         });
       } else if (transformTags.includes(name)) {
         const uriAttr = attributes['src'] ? 'src' : 'href';
-        if (attributes[uriAttr] && !isExternal(attributes[uriAttr]) && !attributes[uriAttr].includes('javascript:void')) {
+        if (
+          attributes[uriAttr] &&
+          !isExternal(attributes[uriAttr]) &&
+          !attributes[uriAttr].includes('javascript:void')
+        ) {
           const uri = view.webview.asWebviewUri(pathFromRelative(attributes[uriAttr], srcPath));
           attributes[uriAttr] = uri.toString(true);
         }
@@ -119,7 +121,12 @@ export const processListener = ({ slice, view, workspaceState }: ProcessListener
   slice.subscribe(({ configuration, pageKey, parsedDoc, rawDoc }) => {
     if (isNone(parsedDoc) && isSome(rawDoc) && isSome(configuration) && isSome(configuration.value.docsPath)) {
       resetBuf();
-      const parser = getParser(view, configuration.value.docsPath.value, configuration.value.extensionPath, workspaceState);
+      const parser = getParser(
+        view,
+        configuration.value.docsPath.value,
+        configuration.value.extensionPath,
+        workspaceState
+      );
       parser.write(rawDoc.value);
       parser.end();
       update(setParsedDoc(some(buf)));

@@ -16,7 +16,6 @@ const vscode = acquireVsCodeApi();
       return;
     }
 
-    
     e.preventDefault();
     e.stopPropagation();
     if (eventHandled(e.target as Element)) {
@@ -52,7 +51,7 @@ const vscode = acquireVsCodeApi();
     if (stateEl) {
       const data = stateEl.getAttribute('data-state') || '{}';
       vscode.setState(JSON.parse(data));
-      const event = new PageTransitionEvent("pageshow", { persisted: true });
+      const event = new PageTransitionEvent('pageshow', { persisted: true });
       window.dispatchEvent(event);
     }
     document.removeEventListener('DOMContentLoaded', contentLoaded);

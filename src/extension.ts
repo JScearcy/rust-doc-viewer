@@ -12,7 +12,6 @@ import { errorListener } from './doc-listener/error';
 import { pipe } from 'fp-ts/lib/function';
 
 export function activate(context: vscode.ExtensionContext) {
-  console.log('"rust-doc-viewer" is now active');
   let viewRef: Option<vscode.WebviewPanel> = none;
   const disposable = vscode.commands.registerCommand('extension.rustDocViewer', async () => {
     const subscriptions = errorListener({ slice: slice([StateKey.errors]) });
@@ -20,9 +19,7 @@ export function activate(context: vscode.ExtensionContext) {
     if (isNone(viewRef)) {
       const webViewOptions = {
         enableScripts: true,
-        localResourceRoots: [
-          vscode.Uri.file(context.extensionPath),
-        ] as vscode.Uri[],
+        localResourceRoots: [vscode.Uri.file(context.extensionPath)] as vscode.Uri[],
       };
       pipe(
         initConfig,

@@ -7,6 +7,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
+## [4.0.1] - 2023-09-10
+
+- Handle legacy rustdoc vars `div` + `id` or newly introduced vars `meta` + `name`
+- Remove unecessary console logs
+- Prettier updates
+
 ## [4.0.0] - 2023-07-09
 
 - Fix storage load order issue, allowing VSCode stored settings to intercept storage calls

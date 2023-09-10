@@ -80,10 +80,7 @@ export const postMessageListener = ({ slice, view, workspaceState }: PostMessage
               ...currState,
               ...payload,
             };
-            workspaceState.update(
-              'rustDocViewer',
-              JSON.stringify(newState)
-            );
+            workspaceState.update('rustDocViewer', JSON.stringify(newState));
           }
           break;
         }

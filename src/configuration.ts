@@ -9,6 +9,9 @@ import { parse } from '@iarna/toml';
 import { showError } from './utils/error';
 import { pipe } from 'fp-ts/lib/function';
 import { join } from 'path';
+import { cargoSafeMetadata } from './cargoInterop';
+import { from, lastValueFrom } from 'rxjs';
+import { map as mapObs, mergeMap } from 'rxjs/operators';
 
 export type Configuration = {
   customTargetDir: Option<string>;
@@ -83,6 +86,36 @@ type CrateType = {
   workspace?: { members: string[] }[];
 };
 const getDocsInfo = async (base: vscode.WorkspaceFolder): Promise<Option<{ names: string[]; docsPaths: string[] }>> => {
+  return lastValueFrom(
+    cargoSafeMetadata(base.uri.fsPath).pipe(
+      mapObs((metadata) => {
+        return pipe(
+          metadata,
+          map((metadata) => {
+            const names =
+              metadata?.packages?.reduce(
+                (nam, pkg) => [...nam, ...pkg.targets.map((target) => target.name)],
+                [] as string[]
+              ) || [];
+            return {
+              names,
+              docsPaths: [join(metadata.target_directory, 'doc')],
+            };
+          })
+        );
+      }),
+      mergeMap((docsInfo) => {
+        if (isSome(docsInfo)) {
+          return from([docsInfo]);
+        } else {
+          return from(directorySearchStrategy(base));
+        }
+      })
+    )
+  );
+};
+
+const directorySearchStrategy = async (base: vscode.WorkspaceFolder) => {
   const docsInfo = await bfsDir(base.uri.fsPath, (dir) => dir.name === 'Cargo.toml' || dir.name === 'doc').then(
     (dirs) => {
       return dirs.reduce(async (acc, path) => {

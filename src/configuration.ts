@@ -30,6 +30,9 @@ export const getConfiguration = async (extensionPath: string): Promise<Option<Co
     map((docPath) => (docPath[0] === '~' ? docPath.replace('~', os.homedir()) : docPath)),
     map((docPath) => join(docPath, 'rust', 'html'))
   );
+  const extraEnv = fromNullable(
+    vscode.workspace.getConfiguration().get<Record<string, string>>('rustDocViewer.extraEnv')
+  );
   if (workspaces && workspaces.length > 0) {
     let docsPathWs = workspaces[0];
     if (workspaces.length > 1) {
@@ -44,7 +47,7 @@ export const getConfiguration = async (extensionPath: string): Promise<Option<Co
 
     let docsPath: Option<string> = none;
     let docsName: Option<string> = none;
-    const docsInfo = await getDocsInfo(docsPathWs);
+    const docsInfo = await getDocsInfo(docsPathWs, extraEnv);
     if (isSome(docsInfo)) {
       const { docsPaths, names } = docsInfo.value;
       let name: string | undefined = names[0];
@@ -85,9 +88,13 @@ type CrateType = {
   package?: { name: string };
   workspace?: { members: string[] }[];
 };
-const getDocsInfo = async (base: vscode.WorkspaceFolder): Promise<Option<{ names: string[]; docsPaths: string[] }>> => {
+const getDocsInfo = async (
+  base: vscode.WorkspaceFolder,
+  extraEnv: Option<Record<string, string>>
+): Promise<Option<{ names: string[]; docsPaths: string[] }>> => {
+  const envConfig = isSome(extraEnv) ? extraEnv.value : undefined;
   return lastValueFrom(
-    cargoSafeMetadata(base.uri.fsPath).pipe(
+    cargoSafeMetadata({ cwd: base.uri.fsPath, envConfig }).pipe(
       mapObs((metadata) => {
         return pipe(
           metadata,

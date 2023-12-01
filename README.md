@@ -17,6 +17,13 @@ Open your rust docs and view them in another tab in VS Code
 
 ![Rust Doc Viewer Demo](images/rust-doc-viewer-demo.gif)
 
+### Additional configuration
+
+- `rustDocViewer.extraEnv`
+  - Set additional evironment variables that will be set before invoking `cargo` commands (used to get project docs location)
+  - Will merge with existing set of environment variables, overwriting overlapping variables
+  - A single object of key value pair(s)
+
 ## Known Issues
 
     1.) No easy navigation

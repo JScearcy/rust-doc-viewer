@@ -4,9 +4,15 @@ import { Option, some, none } from 'fp-ts/Option';
 
 const versionTest = /cargo\s(\d+\.\d+\.\d+).*/i;
 
-const cargoExists = (cwd?: string): Observable<boolean> => {
+type MetadataArgs = {
+  cwd?: string,
+  envConfig?: Record<string, string>
+}
+
+const cargoExists = ({cwd, envConfig = {}}: MetadataArgs = {}): Observable<boolean> => {
+  const env = { ...process.env, ...envConfig };
   return new Observable((subscriber) => {
-    exec('cargo --version', { cwd, windowsHide: true }, (error, stdout, stderr) => {
+    exec('cargo --version', { cwd, env, windowsHide: true }, (error, stdout, stderr) => {
       if (error || stderr) {
         subscriber.next(false);
       } else if (stdout) {
@@ -17,9 +23,10 @@ const cargoExists = (cwd?: string): Observable<boolean> => {
   });
 };
 
-const cargoMetadata = (cwd?: string): Observable<Option<Metadata>> => {
+const cargoMetadata = ({cwd, envConfig = {}}: MetadataArgs = {}): Observable<Option<Metadata>> => {
+  const env = { ...process.env, ...envConfig };
   return new Observable((subscriber) => {
-    exec('cargo metadata --no-deps --format-version 1 -q', { cwd, windowsHide: true }, (error, stdout, stderr) => {
+    exec('cargo metadata --no-deps --format-version 1 -q', { cwd, env, windowsHide: true }, (error, stdout, stderr) => {
       if (error || stderr) {
         subscriber.next(none);
       } else if (stdout) {
@@ -40,11 +47,11 @@ const cargoMetadata = (cwd?: string): Observable<Option<Metadata>> => {
   });
 };
 
-export const cargoSafeMetadata = (cwd?: string): Observable<Option<Metadata>> => {
-  return cargoExists().pipe(
+export const cargoSafeMetadata = ({cwd, envConfig = {}}: MetadataArgs = {}): Observable<Option<Metadata>> => {
+  return cargoExists({ cwd, envConfig}).pipe(
     mergeMap((exists) => {
       if (exists) {
-        return cargoMetadata(cwd);
+        return cargoMetadata({cwd, envConfig});
       } else {
         return from([none]);
       }

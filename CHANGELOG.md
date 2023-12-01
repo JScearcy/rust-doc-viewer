@@ -7,6 +7,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## Changed
 
+## [4.2.0] - 2023-12-01
+
+- Add `extraEnv` VSCode setting, set before `cargo` commands are invoked
+
 ## [4.1.0] - 2023-09-16
 
 - Integrate `cargo metadata` to resolve target directory for docs, fallback to legacy on failure

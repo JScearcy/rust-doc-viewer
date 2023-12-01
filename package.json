@@ -16,7 +16,7 @@
     "color": "#0e95b7",
     "theme": "dark"
   },
-  "version": "4.1.0",
+  "version": "4.2.0",
   "engines": {
     "vscode": "^1.45.0"
   },
@@ -32,6 +32,19 @@
     "configuration": {
       "title": "Rust doc viewer",
       "properties": {
+        "rustDocViewer.extraEnv": {
+          "anyOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "description": "Variables in form of { \"key\": \"value\"}"
+            }
+          ],
+          "default": null,
+          "markdownDescription": "Set additional env variables for `cargo` calls. For example, custom PATH to include custom `cargo` implementation."
+        },
         "rustDocViewer.rustShareDocPath": {
           "type": "string",
           "markdownDescription": "Root path to docs (std/core) - installed by rustup, or otherwise built. Example: `~/.rustup/toolchains/nightly-x86_64-unknown-linux-gnu/share/doc`"

@@ -80,7 +80,7 @@
     "@types/vscode-webview": "^1.57.0",
     "@vscode/test-electron": "^1.6.2",
     "babel-jest": "^27.4.5",
-    "esbuild": "^0.14.7",
+    "esbuild": "^0.25.0",
     "glob": "^7.2.0",
     "jest": "^27.4.5",
     "jest-cli": "^27.5.1",
